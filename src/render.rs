@@ -1,34 +1,63 @@
 use ratatui::{
     Frame,
-    layout::Margin,
+    layout::{Constraint, Direction, Layout, Margin},
     style::{Style, Stylize},
     text::Line,
     widgets::{Block, BorderType, Borders, List, ListItem},
 };
 
-use crate::App;
+use crate::app::App;
 
 pub fn render_app(frame: &mut Frame, app: &mut App) {
-    let area = frame.area().inner(Margin::new(3, 1));
+    let stack_list = {
+        let stack = app
+            .parent_tree_stack()
+            .into_iter()
+            .map(|item| item.text.clone())
+            .map(Line::from)
+            .map(ListItem::new);
 
-    // Create list items
-    let items: Vec<ListItem> = app
-        .names
-        .iter()
-        .map(|name| ListItem::new(Line::from(name.clone())))
-        .collect();
+        List::new(stack)
+            .block(
+                Block::default()
+                    .title(" Stack ")
+                    .borders(Borders::ALL)
+                    .border_type(BorderType::Rounded),
+            )
+            .highlight_style(Style::new().reversed())
+            .highlight_symbol(" -- ")
+    };
 
-    // Create a List widget
-    let list = List::new(items)
-        .block(
-            Block::default()
-                .title(" Names ")
-                .borders(Borders::ALL)
-                .border_type(BorderType::Rounded),
-        )
-        .highlight_style(Style::new().reversed())
-        .highlight_symbol(">> ");
+    let elements_list = {
+        let viewed_nodes = app.nodes_in_view();
 
-    // Render the list with its state
-    frame.render_stateful_widget(list, area, &mut app.list);
+        let elements = viewed_nodes
+            .iter()
+            .map(|item| item.text.clone())
+            .map(Line::from)
+            .map(ListItem::new);
+
+        List::new(elements)
+            .block(
+                Block::default()
+                    .title(" Elements ")
+                    .borders(Borders::ALL)
+                    .border_type(BorderType::Rounded),
+            )
+            .highlight_style(Style::new().reversed())
+            .highlight_symbol(" > ")
+    };
+
+    let entire_area = frame.area().inner(Margin::new(3, 1));
+
+    let stack_view_constraint = Constraint::Length(5);
+    let elements_view_constraint = Constraint::Min(elements_list.len() as u16);
+
+    let layout = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([stack_view_constraint, elements_view_constraint])
+        .split(entire_area);
+
+    frame.render_stateful_widget(stack_list, layout[0], &mut app.stack_list);
+    frame.render_stateful_widget(elements_list, layout[1], &mut app.elements_list);
 }

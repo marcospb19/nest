@@ -1,30 +1,34 @@
 //! Store and read the state from the disk.
 
-use std::{fs, path::Path};
+use std::path::Path;
 
 use color_eyre::Result;
+use fs_err as fs;
 use serde::{Deserialize, Serialize};
 
-use crate::App;
+use crate::{app::App, tree::ElementTree};
 
 static FILE_PATH: &str = "state.json";
 
 #[derive(Serialize, Deserialize)]
 pub struct State {
-    names: Vec<String>,
-    selected_name: usize,
+    elements: Vec<ElementTree>,
+    selection_path: Vec<usize>,
 }
 
 impl State {
     pub fn from_app(app: &App) -> Self {
+        let mut selection_path = app.parent_view_path.clone();
+        selection_path.push(app.selection_index());
+
         State {
-            names: app.names.clone(),
-            selected_name: app.list.selected().unwrap(),
+            selection_path,
+            elements: app.trees.clone(),
         }
     }
 
     pub fn into_app(self) -> App {
-        App::from_names(self.names)
+        App::from_trees(self.elements)
     }
 }
 

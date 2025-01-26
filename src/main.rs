@@ -1,21 +1,25 @@
+mod app;
 mod disk;
+mod history;
+mod log;
 mod render;
+mod tree;
 
 use std::{
     io::{self},
     ops::ControlFlow,
 };
 
+use app::App;
 use color_eyre::Result;
 use crossterm::{
-    event::{self, Event, KeyCode, KeyEventKind},
+    event::{self, Event, KeyCode, KeyEventKind, KeyModifiers},
     terminal::{disable_raw_mode, enable_raw_mode},
 };
-use disk::save_state;
-use ratatui::{Terminal, backend::CrosstermBackend, widgets::ListState};
+use ratatui::{Terminal, backend::CrosstermBackend};
 
 use self::{
-    disk::{State, load_state},
+    disk::{State, load_state, save_state},
     render::render_app,
 };
 
@@ -44,11 +48,16 @@ fn run(mut app: App, terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> R
     loop {
         terminal.draw(|frame| render_app(frame, &mut app))?;
 
+        let selection = app.selection_index();
+        let contents = app.trees.clone();
+
         let flow = handle_input(&mut app)?;
 
-        if app.changed {
+        let selection_changed = selection != app.selection_index();
+        let contents_changed = contents != app.trees;
+
+        if contents_changed || selection_changed {
             save_state(&State::from_app(&app))?;
-            app.changed = false;
         }
 
         if flow == ControlFlow::Break(()) {
@@ -64,8 +73,14 @@ fn handle_input(app: &mut App) -> Result<ControlFlow<()>> {
         if key.kind == KeyEventKind::Press {
             match key.code {
                 Char('q') => return Ok(ControlFlow::Break(())),
-                Char('d') => app.delete_selected_line(),
-                Char('n') => app.add_line_below(),
+                Char('d') => app.delete_element(),
+                Char('n') => app.add_element_below(),
+                Char('g') => app.scroll_to_top(),
+                Char('G') => app.scroll_to_bottom(),
+                Char('u') => app.undo_change(),
+                Char('r') if key.modifiers.contains(KeyModifiers::CONTROL) => app.redo_change(),
+                Enter | Right => app.push_view_stack(),
+                Esc | Left | Backspace => app.pop_view_stack(),
                 Up => app.move_selection_up(),
                 Down => app.move_selection_down(),
                 _ => {}
@@ -74,72 +89,4 @@ fn handle_input(app: &mut App) -> Result<ControlFlow<()>> {
     }
 
     Ok(ControlFlow::Continue(()))
-}
-
-struct App {
-    changed: bool,
-    names: Vec<String>,
-    list: ListState,
-}
-
-impl App {
-    fn new() -> Self {
-        let names = vec![
-            "Alice".into(),
-            "Bob".into(),
-            "Carol".into(),
-            "Dave".into(),
-            "Eve".into(),
-        ];
-        Self::from_names(names)
-    }
-
-    fn from_names(names: Vec<String>) -> Self {
-        let mut list = ListState::default();
-        list.select(Some(0));
-        Self {
-            names,
-            list,
-            changed: false,
-        }
-    }
-
-    fn current(&self) -> usize {
-        self.list.selected().unwrap()
-    }
-
-    fn set_current(&mut self, index: usize) {
-        self.changed |= self.current() != index;
-        self.list.select(Some(index));
-    }
-
-    fn move_selection_up(&mut self) {
-        let next = if self.current() == 0 {
-            self.names.len() - 1 // Wrap to end
-        } else {
-            self.current() - 1
-        };
-        self.set_current(next);
-    }
-
-    fn move_selection_down(&mut self) {
-        let next = if self.current() + 1 >= self.names.len() {
-            0 // Wrap to start
-        } else {
-            self.current() + 1
-        };
-        self.set_current(next);
-    }
-
-    fn add_line_below(&mut self) {
-        self.names.insert(self.current() + 1, String::from("oiee"));
-        self.move_selection_down();
-        self.changed = true;
-    }
-
-    fn delete_selected_line(&mut self) {
-        self.names.remove(self.current());
-        self.move_selection_up();
-        self.changed = true;
-    }
 }
