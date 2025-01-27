@@ -70,6 +70,7 @@ impl App {
         self.elements_list.selected().unwrap()
     }
 
+    #[expect(unused)]
     fn selected_node(&self) -> &ElementTree {
         &self.nodes_in_view()[self.selection_index()]
     }
