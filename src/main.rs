@@ -1,8 +1,8 @@
 mod app;
+mod entities;
 mod history;
 mod log;
 mod render;
-mod entities;
 mod repository;
 
 use std::{
@@ -72,7 +72,6 @@ fn run(mut app: App, terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> R
 fn handle_input(app: &mut App) -> Result<ControlFlow<()>> {
     use KeyCode::*;
 
-
     if let app::AppState::INSERT(_) = app.state {
         if let ratatui::crossterm::event::Event::Key(key) = ratatui::crossterm::event::read()? {
             if key.code == ratatui::crossterm::event::KeyCode::Esc {
@@ -83,7 +82,7 @@ fn handle_input(app: &mut App) -> Result<ControlFlow<()>> {
                 app.text_area.input(key);
             }
         }
-        return Ok(ControlFlow::Continue(()));   
+        return Ok(ControlFlow::Continue(()));
     }
 
     if let Event::Key(key) = event::read()? {

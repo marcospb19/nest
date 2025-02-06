@@ -1,17 +1,21 @@
-use std::{collections::HashMap, io::Write, path::Path};
-use std::time::{SystemTime, UNIX_EPOCH};
-use serde::{Deserialize, Serialize};
-use fs_err as fs;
-
-use crate::entities::{TaskData, TaskEntity};
+use std::{
+    collections::HashMap,
+    io::Write,
+    path::Path,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
 use color_eyre::Result;
+use fs_err as fs;
+use serde::{Deserialize, Serialize};
+
+use crate::entities::{TaskData, TaskEntity};
 
 static FILE_PATH: &str = "state.json";
 
 #[derive(Default, Debug, Serialize, Deserialize)]
 pub struct AppTreeRepository {
-    pub tasks: HashMap<u64, TaskEntity>
+    pub tasks: HashMap<u64, TaskEntity>,
 }
 
 impl AppTreeRepository {
@@ -25,13 +29,8 @@ impl AppTreeRepository {
         task_entity.parent_id = Some(parent_id);
 
         self.tasks.insert(task_entity.id, task_entity.clone());
-        self.tasks
-            .entry(parent_id)
-            .or_default()
-            .children
-            .push(task_entity.id);
+        self.tasks.entry(parent_id).or_default().children.push(task_entity.id);
     }
-
 
     pub fn get_task(&self, task_id: u64) -> Option<&TaskEntity> {
         self.tasks.get(&task_id)
@@ -44,7 +43,7 @@ impl AppTreeRepository {
             parents.push(task);
             match task.parent_id {
                 None => break,
-                Some(parent_id) => current_id = parent_id
+                Some(parent_id) => current_id = parent_id,
             }
         }
         parents
@@ -60,13 +59,11 @@ impl AppTreeRepository {
     pub fn find_sub_tasks(&self, parent_id: u64) -> Vec<&TaskEntity> {
         match self.tasks.get(&parent_id) {
             None => return vec![],
-            Some(parent_task) => {
-                parent_task
-                    .children
-                    .iter()
-                    .filter_map(|id| self.tasks.get(id))
-                    .collect()
-            }
+            Some(parent_task) => parent_task
+                .children
+                .iter()
+                .filter_map(|id| self.tasks.get(id))
+                .collect(),
         }
     }
 
@@ -85,18 +82,16 @@ impl AppTreeRepository {
     }
 
     pub fn update_task_title(&mut self, task_id: u64, new_title: String) {
-        self.tasks
-            .entry(task_id)
-            .and_modify(|task| task.title = new_title);
+        self.tasks.entry(task_id).and_modify(|task| task.title = new_title);
     }
-
 
     fn create_task_entity(task_data: TaskData) -> TaskEntity {
         let start = SystemTime::now();
-        let timestamp = start.duration_since(UNIX_EPOCH)
+        let timestamp = start
+            .duration_since(UNIX_EPOCH)
             .expect("Time went backwards")
             .as_millis() as u64;
-    
+
         let mut task = TaskEntity::default().with_data(task_data);
         task.id = timestamp;
 
@@ -108,7 +103,7 @@ impl AppTreeRepository {
         fs::write(FILE_PATH, json)?;
         Ok(())
     }
-    
+
     pub fn load_state() -> Result<AppTreeRepository> {
         if let Ok(json) = fs::read_to_string(FILE_PATH) {
             if let Ok(state) = serde_json::from_str(&json) {
@@ -123,5 +118,4 @@ impl AppTreeRepository {
 
         Ok(default_state)
     }
-    
 }
