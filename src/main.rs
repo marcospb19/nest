@@ -1,9 +1,7 @@
 mod app;
-mod disk;
 mod history;
 mod log;
 mod render;
-mod tree;
 mod entities;
 mod repository;
 
@@ -20,15 +18,16 @@ use crossterm::{
 };
 use ratatui::{Terminal, backend::CrosstermBackend};
 
-use self::{
-    disk::{State, load_state, save_state},
-    render::render_app,
-};
+use self::render::render_app;
 
 fn main() -> Result<()> {
     color_eyre::install()?;
 
-    let app = load_state()?.map_or_else(App::new, State::into_app);
+    let repository = repository::AppTreeRepository::load_state()?;
+
+    let app = App::new(repository);
+
+    // let app = load_state()?.map_or_else(App::new, State::into_app);
 
     // Setup
     let mut terminal = Terminal::new(CrosstermBackend::new(io::stdout()))?;
@@ -50,17 +49,17 @@ fn run(mut app: App, terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> R
     loop {
         terminal.draw(|frame| render_app(frame, &mut app))?;
 
-        let selection = app.selection_index();
-        let contents = app.trees.clone();
+        // let selection = app.selection_index();
+        // let contents = app.trees.clone();
 
         let flow = handle_input(&mut app)?;
 
-        let selection_changed = selection != app.selection_index();
-        let contents_changed = contents != app.trees;
+        // let selection_changed = selection != app.selection_index();
+        // let contents_changed = contents != app.trees;
 
-        if contents_changed || selection_changed {
-            save_state(&State::from_app(&app))?;
-        }
+        // if contents_changed || selection_changed {
+        //     save_state(&State::from_app(&app))?;
+        // }
 
         if flow == ControlFlow::Break(()) {
             break Ok(());
@@ -75,14 +74,14 @@ fn handle_input(app: &mut App) -> Result<ControlFlow<()>> {
         if key.kind == KeyEventKind::Press {
             match key.code {
                 Char('q') => return Ok(ControlFlow::Break(())),
-                Char('d') => app.delete_element(),
-                Char('n') => app.add_element_below(),
+                Char('d') => app.delete_current_task(),
+                Char('n') => app.add_new_task(),
                 Char('g') => app.scroll_to_top(),
                 Char('G') => app.scroll_to_bottom(),
-                Char('u') => app.undo_change(),
-                Char('r') if key.modifiers.contains(KeyModifiers::CONTROL) => app.redo_change(),
-                Enter | Right => app.push_view_stack(),
-                Esc | Left | Backspace => app.pop_view_stack(),
+                // Char('u') => app.undo_change(),
+                // Char('r') if key.modifiers.contains(KeyModifiers::CONTROL) => app.redo_change(),
+                Enter | Right => app.nest_task(),
+                Esc | Left | Backspace => app.get_back_to_parent(),
                 Up => app.move_selection_up(),
                 Down => app.move_selection_down(),
                 _ => {}

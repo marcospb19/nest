@@ -11,9 +11,9 @@ use crate::app::App;
 pub fn render_app(frame: &mut Frame, app: &mut App) {
     let stack_list = {
         let stack = app
-            .parent_tree_stack()
+            .find_parents_titles()
             .into_iter()
-            .map(|item| item.text.clone())
+            .map(String::from)
             .map(Line::from)
             .map(ListItem::new);
 
@@ -29,11 +29,11 @@ pub fn render_app(frame: &mut Frame, app: &mut App) {
     };
 
     let elements_list = {
-        let viewed_nodes = app.nodes_in_view();
+        let viewed_nodes = app.find_tasks_to_display();
 
         let elements = viewed_nodes
             .iter()
-            .map(|item| item.text.clone())
+            .map(|item| item.title.clone())
             .map(Line::from)
             .map(ListItem::new);
 
