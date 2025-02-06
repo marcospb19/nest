@@ -1,7 +1,6 @@
 use std::{
     collections::HashMap,
     io::Write,
-    path::Path,
     time::{SystemTime, UNIX_EPOCH},
 };
 

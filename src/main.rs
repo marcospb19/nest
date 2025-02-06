@@ -13,7 +13,7 @@ use std::{
 use app::App;
 use color_eyre::Result;
 use crossterm::{
-    event::{self, Event, KeyCode, KeyEventKind, KeyModifiers},
+    event::{self, Event, KeyCode, KeyEventKind},
     terminal::{disable_raw_mode, enable_raw_mode},
 };
 use ratatui::{Terminal, backend::CrosstermBackend};

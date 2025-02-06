@@ -1,14 +1,12 @@
-use std::task;
 
 use ratatui::widgets::ListState;
 use tui_textarea::TextArea;
 
 use crate::{
     entities::{TaskData, TaskEntity},
-    repository::{self, AppTreeRepository},
+    repository::AppTreeRepository,
 };
 
-const PLACEHOLDER_TEXT: &str = "Placeholder text.";
 const NEW_ELEMENT_TEXT: &str = "New task.";
 
 pub enum AppState {
