@@ -84,12 +84,10 @@ impl AppTreeRepository {
         self.tasks.remove(&task_id);
     }
 
-    pub fn update_task(&mut self, task_id: u64, task_data: TaskData) {
+    pub fn update_task_title(&mut self, task_id: u64, new_title: String) {
         self.tasks
             .entry(task_id)
-            .and_modify(|task| {
-                *task = task.clone().with_data(task_data);
-            });
+            .and_modify(|task| task.title = new_title);
     }
 
 

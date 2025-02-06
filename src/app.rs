@@ -1,13 +1,19 @@
 use std::task;
 
 use ratatui::widgets::ListState;
+use tui_textarea::TextArea;
 
 use crate::{entities::{TaskData, TaskEntity}, repository::{self, AppTreeRepository}};
 
 const PLACEHOLDER_TEXT: &str = "Placeholder text.";
 const NEW_ELEMENT_TEXT: &str = "New task.";
 
-pub struct App {
+pub enum AppState {
+    NORMAL,
+    INSERT(u64),
+}
+
+pub struct App<'a> {
     pub repository: AppTreeRepository,
     
     pub opened_task: Option<u64>,
@@ -15,9 +21,12 @@ pub struct App {
 
     pub elements_list: ListState,
     pub stack_list: ListState,
+    pub text_area: TextArea<'a>,
+
+    pub state: AppState,
 }
 
-impl App {
+impl App<'_> {
     pub fn new(repository: AppTreeRepository) -> Self {
         let mut list = ListState::default();
         list.select(Some(0));
@@ -28,7 +37,13 @@ impl App {
             elements_list: list,
             opened_task: None,
             selection_index: 0,
+            state: AppState::NORMAL,
+            text_area: TextArea::default(),
         }
+    }
+
+    pub fn get_selected_task(&self) -> Option<&TaskEntity> {
+        self.find_tasks_to_display().get(self.selection_index).map(|task| *task)
     }
 
     pub fn find_tasks_to_display(&self) -> Vec<&TaskEntity> {
@@ -53,7 +68,7 @@ impl App {
     }
 
     pub fn delete_current_task(&mut self) {
-        let id_to_delete = self.find_tasks_to_display().get(self.selection_index).unwrap().id;
+        let id_to_delete = self.get_selected_task().unwrap().id;
         self.repository.remove_task(id_to_delete);
 
         if self.selection_index > 0  {
@@ -106,8 +121,7 @@ impl App {
     }
 
     pub fn nest_task(&mut self) {
-        let displayed_tasks = self.find_tasks_to_display();
-        let task_to_nest = displayed_tasks.get(self.selection_index);
+        let task_to_nest = self.get_selected_task();
         match task_to_nest {
             None => return,
             Some(new_parent_task_id) => {
@@ -128,6 +142,28 @@ impl App {
 
         self.opened_task = next_parent_task_id;
         self.scroll_to_top();
+    }
+
+    pub fn init_insert_mode_to_edit_a_task_title(&mut self) {
+        let selected_task = self.get_selected_task().unwrap();
+        
+        let task_id = selected_task.id;
+        let title_to_edit = selected_task.title.clone();
+
+        self.text_area = TextArea::from([ title_to_edit ]);
+        self.state = AppState::INSERT(task_id);
+    }
+
+    pub fn cancel_insert_mode(&mut self) {
+        self.state = AppState::NORMAL;
+    }
+
+    pub fn close_insert_mode_updating_task_title(&mut self) {
+        if let AppState::INSERT(task_id) = self.state {
+            let content = self.text_area.lines().join("\n");
+            self.repository.update_task_title(task_id, content);
+            self.state = AppState::NORMAL;
+        }
     }
 
     // pub fn find_nodes_in_view(&self) -> &[TaskEntity] {

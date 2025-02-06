@@ -6,7 +6,7 @@ use ratatui::{
     widgets::{Block, BorderType, Borders, List, ListItem},
 };
 
-use crate::app::App;
+use crate::app::{App, AppState};
 
 pub fn render_app(frame: &mut Frame, app: &mut App) {
     let stack_list = {
@@ -59,6 +59,14 @@ pub fn render_app(frame: &mut Frame, app: &mut App) {
         .constraints([stack_view_constraint, elements_view_constraint])
         .split(entire_area);
 
-    frame.render_stateful_widget(stack_list, layout[0], &mut app.stack_list);
+
+    if let AppState::NORMAL = app.state {
+        frame.render_stateful_widget(stack_list, layout[0], &mut app.stack_list);
+    } else {
+        frame.render_widget(&app.text_area, layout[0]);
+    }
+
+
+
     frame.render_stateful_widget(elements_list, layout[1], &mut app.elements_list);
 }

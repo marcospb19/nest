@@ -57,6 +57,8 @@ fn run(mut app: App, terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> R
         // let selection_changed = selection != app.selection_index();
         // let contents_changed = contents != app.trees;
 
+        app.repository.save()?;
+
         // if contents_changed || selection_changed {
         //     save_state(&State::from_app(&app))?;
         // }
@@ -70,6 +72,20 @@ fn run(mut app: App, terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> R
 fn handle_input(app: &mut App) -> Result<ControlFlow<()>> {
     use KeyCode::*;
 
+
+    if let app::AppState::INSERT(_) = app.state {
+        if let ratatui::crossterm::event::Event::Key(key) = ratatui::crossterm::event::read()? {
+            if key.code == ratatui::crossterm::event::KeyCode::Esc {
+                app.cancel_insert_mode();
+            } else if key.code == ratatui::crossterm::event::KeyCode::Enter {
+                app.close_insert_mode_updating_task_title();
+            } else {
+                app.text_area.input(key);
+            }
+        }
+        return Ok(ControlFlow::Continue(()));   
+    }
+
     if let Event::Key(key) = event::read()? {
         if key.kind == KeyEventKind::Press {
             match key.code {
@@ -78,6 +94,7 @@ fn handle_input(app: &mut App) -> Result<ControlFlow<()>> {
                 Char('n') => app.add_new_task(),
                 Char('g') => app.scroll_to_top(),
                 Char('G') => app.scroll_to_bottom(),
+                Char('e') => app.init_insert_mode_to_edit_a_task_title(),
                 // Char('u') => app.undo_change(),
                 // Char('r') if key.modifiers.contains(KeyModifiers::CONTROL) => app.redo_change(),
                 Enter | Right => app.nest_task(),
