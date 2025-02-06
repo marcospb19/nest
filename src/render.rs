@@ -13,6 +13,7 @@ pub fn render_app(frame: &mut Frame, app: &mut App) {
         let stack = app
             .find_parents_titles()
             .into_iter()
+            .rev()
             .map(String::from)
             .map(Line::from)
             .map(ListItem::new);

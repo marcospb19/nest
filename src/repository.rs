@@ -33,16 +33,19 @@ impl AppTreeRepository {
     }
 
 
-    pub fn get_task(&self, task_id: u64) -> Option<TaskEntity> {
-        self.tasks.get(&task_id).cloned()
+    pub fn get_task(&self, task_id: u64) -> Option<&TaskEntity> {
+        self.tasks.get(&task_id)
     }
 
-    pub fn find_parents_tasks(&self, task_id: u64) -> Vec<&TaskEntity> {
+    pub fn find_parents_stack(&self, task_id: u64) -> Vec<&TaskEntity> {
         let mut parents = Vec::new();
         let mut current_id = task_id;
-        while let Some(parent_id) = self.tasks.get(&current_id).and_then(|task| task.parent_id) {
-            parents.push(self.tasks.get(&parent_id).unwrap());
-            current_id = parent_id;
+        while let Some(task) = self.tasks.get(&current_id) {
+            parents.push(task);
+            match task.parent_id {
+                None => break,
+                Some(parent_id) => current_id = parent_id
+            }
         }
         parents
     }
@@ -55,10 +58,16 @@ impl AppTreeRepository {
     }
 
     pub fn find_sub_tasks(&self, parent_id: u64) -> Vec<&TaskEntity> {
-        self.tasks
-            .iter()
-            .filter_map(|(id, task)| (id == &parent_id).then_some(task))
-            .collect::<Vec<_>>()
+        match self.tasks.get(&parent_id) {
+            None => return vec![],
+            Some(parent_task) => {
+                parent_task
+                    .children
+                    .iter()
+                    .filter_map(|id| self.tasks.get(id))
+                    .collect()
+            }
+        }
     }
 
     pub fn remove_task(&mut self, task_id: u64) {

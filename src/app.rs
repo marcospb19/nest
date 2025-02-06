@@ -44,7 +44,7 @@ impl App {
             None => vec![],
             Some(task_id) => {
                 self.repository
-                    .find_parents_tasks(task_id)
+                    .find_parents_stack(task_id)
                     .iter()
                     .map(|task| task.title.as_str())
                     .collect()
@@ -112,7 +112,7 @@ impl App {
             None => return,
             Some(new_parent_task_id) => {
                 self.opened_task = Some(new_parent_task_id.id);
-                self.move_selection_up();
+                self.scroll_to_top();
             }
         }
     }
@@ -127,7 +127,7 @@ impl App {
         let next_parent_task_id = current_parent_task_entity.parent_id;
 
         self.opened_task = next_parent_task_id;
-        self.move_selection_up();
+        self.scroll_to_top();
     }
 
     // pub fn find_nodes_in_view(&self) -> &[TaskEntity] {
