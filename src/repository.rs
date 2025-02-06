@@ -66,7 +66,7 @@ impl AppTreeRepository {
         }
     }
 
-    pub fn remove_task(&mut self, task_id: u64) {
+    pub fn remove_task(&mut self, task_id: u64) -> Option<TaskEntity> {
         let parent_id = self.tasks.get(&task_id).and_then(|task| task.parent_id);
 
         if let Some(parent_id) = parent_id {
@@ -77,7 +77,7 @@ impl AppTreeRepository {
                 .retain(|id| *id != task_id);
         }
 
-        self.tasks.remove(&task_id);
+        self.tasks.remove(&task_id)
     }
 
     pub fn update_task_title(&mut self, task_id: u64, new_title: String) {

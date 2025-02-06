@@ -1,6 +1,5 @@
 mod app;
 mod entities;
-mod history;
 mod log;
 mod render;
 mod repository;
@@ -89,15 +88,15 @@ fn handle_input(app: &mut App) -> Result<ControlFlow<()>> {
         if key.kind == KeyEventKind::Press {
             match key.code {
                 Char('q') => return Ok(ControlFlow::Break(())),
-                Char('d') => app.delete_current_task(),
-                Char('n') => app.add_new_task(),
+                Char('d') => _ = app.delete_current_task(),
+                Char('n') => _ = app.add_new_task(),
                 Char('g') => app.scroll_to_top(),
                 Char('G') => app.scroll_to_bottom(),
-                Char('e') => app.init_insert_mode_to_edit_a_task_title(),
+                Char('e') => { app.init_insert_mode_to_edit_a_task_title(); },
                 // Char('u') => app.undo_change(),
                 // Char('r') if key.modifiers.contains(KeyModifiers::CONTROL) => app.redo_change(),
                 Enter | Right => app.nest_task(),
-                Esc | Left | Backspace => app.get_back_to_parent(),
+                Esc | Left | Backspace => _ = app.get_back_to_parent(),
                 Up => app.move_selection_up(),
                 Down => app.move_selection_down(),
                 _ => {}

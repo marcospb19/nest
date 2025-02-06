@@ -67,13 +67,14 @@ impl App<'_> {
         }
     }
 
-    pub fn delete_current_task(&mut self) {
-        let id_to_delete = self.get_selected_task().unwrap().id;
-        self.repository.remove_task(id_to_delete);
-
+    pub fn delete_current_task(&mut self) -> Option<u64> {
+        let id_to_delete = self.get_selected_task()?.id;
+        
         if self.selection_index > 0 {
             self.selection_index -= 1;
         }
+
+        self.repository.remove_task(id_to_delete).map(|task| task.id)
     }
 
     pub fn add_new_task(&mut self) {
@@ -92,7 +93,11 @@ impl App<'_> {
             }
         }
 
-        self.selection_index = self.find_tasks_to_display().len().saturating_sub(1);
+        println!("New task added.");
+        println!("{:?}", self.repository.tasks);
+        println!("{:?}", self.selection_index);
+
+        self.move_display_to(self.find_tasks_to_display().len().checked_sub(1));
     }
 
     pub fn move_display_to(&mut self, index: Option<usize>) {
@@ -131,21 +136,18 @@ impl App<'_> {
         }
     }
 
-    pub fn get_back_to_parent(&mut self) {
-        if self.opened_task.is_none() {
-            return;
-        }
-
-        let current_parent_task_id = self.opened_task.unwrap();
-        let current_parent_task_entity = self.repository.get_task(current_parent_task_id).unwrap();
+    pub fn get_back_to_parent(&mut self) -> Option<()> {
+        let current_parent_task_id = self.opened_task?;
+        let current_parent_task_entity = self.repository.get_task(current_parent_task_id)?;
         let next_parent_task_id = current_parent_task_entity.parent_id;
 
         self.opened_task = next_parent_task_id;
         self.scroll_to_top();
+        Some(())
     }
 
-    pub fn init_insert_mode_to_edit_a_task_title(&mut self) {
-        let selected_task = self.get_selected_task().unwrap();
+    pub fn init_insert_mode_to_edit_a_task_title(&mut self) -> Option<()> {
+        let selected_task = self.get_selected_task()?;
 
         let task_id = selected_task.id;
         let title_to_edit = selected_task.title.clone();
@@ -153,6 +155,7 @@ impl App<'_> {
         self.text_area = TextArea::from([title_to_edit]);
         self.text_area.move_cursor(tui_textarea::CursorMove::End);
         self.state = AppState::INSERT(task_id);
+        Some(())
     }
 
     pub fn cancel_insert_mode(&mut self) {
