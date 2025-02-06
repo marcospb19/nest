@@ -4,6 +4,8 @@ mod history;
 mod log;
 mod render;
 mod tree;
+mod entities;
+mod repository;
 
 use std::{
     io::{self},
