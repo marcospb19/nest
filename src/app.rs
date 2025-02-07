@@ -93,10 +93,6 @@ impl App<'_> {
             }
         }
 
-        println!("New task added.");
-        println!("{:?}", self.repository.tasks);
-        println!("{:?}", self.selection_index);
-
         self.move_display_to(self.find_tasks_to_display().len().checked_sub(1));
     }
 
