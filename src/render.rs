@@ -52,17 +52,17 @@ pub fn render_app(frame: &mut Frame, app: &mut App) {
     let entire_area = frame.area().inner(Margin::new(3, 1));
 
     let elements_view_constraint = Constraint::Min(elements_list.len() as u16);
-    
-    if app.find_parents_titles().len() > 0 {
-            let stack_view_constraint = Constraint::Length(2 + app.find_parents_titles().len() as u16);
 
-            let layout = Layout::default()
-                .direction(Direction::Vertical)
-                .constraints([stack_view_constraint, elements_view_constraint])
-                .split(entire_area);
-        
-            frame.render_stateful_widget(stack_list, layout[0], &mut app.stack_list);
-            frame.render_stateful_widget(elements_list, layout[1], &mut app.elements_list);
+    if app.find_parents_titles().len() > 0 {
+        let stack_view_constraint = Constraint::Length(2 + app.find_parents_titles().len() as u16);
+
+        let layout = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([stack_view_constraint, elements_view_constraint])
+            .split(entire_area);
+
+        frame.render_stateful_widget(stack_list, layout[0], &mut app.stack_list);
+        frame.render_stateful_widget(elements_list, layout[1], &mut app.elements_list);
     } else {
         let layout = Layout::default()
             .direction(Direction::Vertical)
@@ -71,7 +71,7 @@ pub fn render_app(frame: &mut Frame, app: &mut App) {
 
         frame.render_stateful_widget(elements_list, layout[0], &mut app.elements_list);
     }
-    
+
     if let AppState::INSERT(_) = app.state {
         let popup_block = Block::default()
             .title("Enter a new key-value pair")

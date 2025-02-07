@@ -92,7 +92,7 @@ fn handle_input(app: &mut App) -> Result<ControlFlow<()>> {
                 Char('n') => _ = app.add_new_task(),
                 Char('g') => app.scroll_to_top(),
                 Char('G') => app.scroll_to_bottom(),
-                Char('e') => { app.init_insert_mode_to_edit_a_task_title(); },
+                Char('e') => _ = app.init_insert_mode_to_edit_a_task_title(),
                 // Char('u') => app.undo_change(),
                 // Char('r') if key.modifiers.contains(KeyModifiers::CONTROL) => app.redo_change(),
                 Enter | Right => app.nest_task(),
