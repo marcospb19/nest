@@ -9,10 +9,8 @@ use crate::{
 const NEW_ELEMENT_TEXT: &str = "New task.";
 
 pub enum AppState {
-    NORMAL,
-    INSERT {
-        task_id: u64
-    },
+    Normal,
+    Insert { task_id: u64 },
 }
 
 pub struct App<'a> {
@@ -39,13 +37,13 @@ impl App<'_> {
             elements_list: list,
             opened_task: None,
             selection_index: 0,
-            state: AppState::NORMAL,
+            state: AppState::Normal,
             text_area: TextArea::default(),
         }
     }
 
     pub fn get_selected_task(&self) -> Option<&TaskEntity> {
-        self.find_tasks_to_display().get(self.selection_index).map(|task| *task)
+        self.find_tasks_to_display().get(self.selection_index).copied()
     }
 
     pub fn find_tasks_to_display(&self) -> Vec<&TaskEntity> {
@@ -125,7 +123,7 @@ impl App<'_> {
     pub fn nest_task(&mut self) {
         let task_to_nest = self.get_selected_task();
         match task_to_nest {
-            None => return,
+            None => (),
             Some(new_parent_task_id) => {
                 self.opened_task = Some(new_parent_task_id.id);
                 self.scroll_to_top();
@@ -151,22 +149,22 @@ impl App<'_> {
 
         self.text_area = TextArea::from([title_to_edit]);
         self.text_area.move_cursor(tui_textarea::CursorMove::End);
-        self.state = AppState::INSERT { task_id };
+        self.state = AppState::Insert { task_id };
         Some(())
     }
 
     pub fn cancel_insert_mode(&mut self) {
-        self.state = AppState::NORMAL;
+        self.state = AppState::Normal;
     }
 
     pub fn close_insert_mode_updating_task_title(&mut self) {
-        if let AppState::INSERT{ task_id } = self.state {
+        if let AppState::Insert { task_id } = self.state {
             let content = self.text_area.lines().join("\n");
             if !content.is_empty() {
                 self.repository.update_task_title(task_id, content);
             }
 
-            self.state = AppState::NORMAL;
+            self.state = AppState::Normal;
         }
     }
 }
@@ -181,7 +179,7 @@ mod tests {
         let app = App::new(repository);
 
         assert_eq!(app.selection_index, 0);
-        assert!(matches!(app.state, AppState::NORMAL));
+        assert!(matches!(app.state, AppState::Normal));
         assert!(app.opened_task.is_none());
     }
 
@@ -253,7 +251,7 @@ mod tests {
         app.add_new_task();
         app.init_insert_mode_to_edit_a_task_title();
 
-        assert!(matches!(app.state, AppState::INSERT{ .. }));
+        assert!(matches!(app.state, AppState::Insert { .. }));
     }
 
     #[test]
@@ -265,6 +263,6 @@ mod tests {
         app.init_insert_mode_to_edit_a_task_title();
         app.cancel_insert_mode();
 
-        assert!(matches!(app.state, AppState::NORMAL));
+        assert!(matches!(app.state, AppState::Normal));
     }
 }

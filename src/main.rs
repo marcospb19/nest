@@ -71,9 +71,9 @@ fn run(mut app: App, terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> R
 fn handle_input(app: &mut App) -> Result<ControlFlow<()>> {
     use KeyCode::*;
 
-    if let app::AppState::INSERT { .. } = app.state {
+    if let app::AppState::Insert { .. } = app.state {
         use ratatui::crossterm::event;
-        
+
         if let event::Event::Key(key) = event::read()? {
             if key.code == event::KeyCode::Esc {
                 app.cancel_insert_mode();
@@ -91,7 +91,9 @@ fn handle_input(app: &mut App) -> Result<ControlFlow<()>> {
             match key.code {
                 Char('q') => return Ok(ControlFlow::Break(())),
                 Char('d') => _ = app.delete_current_task(),
-                Char('n') => _ = app.add_new_task(),
+                Char('n') => {
+                    app.add_new_task();
+                }
                 Char('g') => app.scroll_to_top(),
                 Char('G') => app.scroll_to_bottom(),
                 Char('e') => _ = app.init_insert_mode_to_edit_a_task_title(),

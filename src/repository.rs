@@ -56,7 +56,7 @@ impl AppTreeRepository {
 
     pub fn find_sub_tasks(&self, parent_id: u64) -> Vec<&TaskEntity> {
         match self.tasks.get(&parent_id) {
-            None => return vec![],
+            None => vec![],
             Some(parent_task) => parent_task
                 .children
                 .iter()
