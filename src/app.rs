@@ -3,7 +3,7 @@ use tui_textarea::TextArea;
 
 use crate::{
     entities::{TaskData, TaskEntity},
-    repository::AppTreeRepository,
+    storage::AppTreeStorage,
 };
 
 const NEW_ELEMENT_TEXT: &str = "New task.";
@@ -14,7 +14,7 @@ pub enum AppState {
 }
 
 pub struct App<'a> {
-    pub repository: AppTreeRepository,
+    pub storage: AppTreeStorage,
 
     pub opened_task: Option<u64>,
     pub selection_index: usize,
@@ -27,14 +27,14 @@ pub struct App<'a> {
 }
 
 impl App<'_> {
-    pub fn new(repository: AppTreeRepository) -> Self {
-        let mut list = ListState::default();
-        list.select(Some(0));
+    pub fn new(storage: AppTreeStorage) -> Self {
+        let mut elements_list = ListState::default();
+        elements_list.select(Some(0));
 
         Self {
-            repository,
+            storage,
+            elements_list,
             stack_list: ListState::default(),
-            elements_list: list,
             opened_task: None,
             selection_index: 0,
             state: AppState::Normal,
@@ -48,9 +48,9 @@ impl App<'_> {
 
     pub fn find_tasks_to_display(&self) -> Vec<&TaskEntity> {
         if let Some(task_id) = self.opened_task {
-            self.repository.find_sub_tasks(task_id)
+            self.storage.find_sub_tasks(task_id)
         } else {
-            self.repository.find_root_tasks()
+            self.storage.find_root_tasks()
         }
     }
 
@@ -58,7 +58,7 @@ impl App<'_> {
         match self.opened_task {
             None => vec![],
             Some(task_id) => self
-                .repository
+                .storage
                 .find_parents_stack(task_id)
                 .iter()
                 .map(|task| task.title.as_str())
@@ -73,7 +73,7 @@ impl App<'_> {
             self.selection_index -= 1;
         }
 
-        self.repository.remove_task(id_to_delete).map(|task| task.id)
+        self.storage.remove_task(id_to_delete).map(|task| task.id)
     }
 
     pub fn add_new_task(&mut self) {
@@ -85,10 +85,10 @@ impl App<'_> {
 
         match self.opened_task {
             Some(parent_task_id) => {
-                self.repository.insert_sub_task(parent_task_id, new_task);
+                self.storage.insert_sub_task(parent_task_id, new_task);
             }
             None => {
-                self.repository.insert_task(new_task);
+                self.storage.insert_task(new_task);
             }
         }
 
@@ -133,7 +133,7 @@ impl App<'_> {
 
     pub fn get_back_to_parent(&mut self) -> Option<()> {
         let current_parent_task_id = self.opened_task?;
-        let current_parent_task_entity = self.repository.get_task(current_parent_task_id)?;
+        let current_parent_task_entity = self.storage.get_task(current_parent_task_id)?;
         let next_parent_task_id = current_parent_task_entity.parent_id;
 
         self.opened_task = next_parent_task_id;
@@ -161,7 +161,7 @@ impl App<'_> {
         if let AppState::Insert { task_id } = self.state {
             let content = self.text_area.lines().join("\n");
             if !content.is_empty() {
-                self.repository.update_task_title(task_id, content);
+                self.storage.update_task_title(task_id, content);
             }
 
             self.state = AppState::Normal;
@@ -175,8 +175,8 @@ mod tests {
 
     #[test]
     fn test_new_app() {
-        let repository = AppTreeRepository::default();
-        let app = App::new(repository);
+        let storage = AppTreeStorage::default();
+        let app = App::new(storage);
 
         assert_eq!(app.selection_index, 0);
         assert!(matches!(app.state, AppState::Normal));
@@ -185,8 +185,8 @@ mod tests {
 
     #[test]
     fn test_add_new_task() {
-        let repository = AppTreeRepository::default();
-        let mut app = App::new(repository);
+        let storage = AppTreeStorage::default();
+        let mut app = App::new(storage);
 
         app.add_new_task();
         let tasks = app.find_tasks_to_display();
@@ -203,8 +203,8 @@ mod tests {
 
     #[test]
     fn test_delete_current_task() {
-        let repository = AppTreeRepository::default();
-        let mut app = App::new(repository);
+        let storage = AppTreeStorage::default();
+        let mut app = App::new(storage);
 
         app.add_new_task();
         let deleted_task_id = app.delete_current_task();
@@ -215,8 +215,8 @@ mod tests {
 
     #[test]
     fn test_nest_task() {
-        let repository = AppTreeRepository::default();
-        let mut app = App::new(repository);
+        let storage = AppTreeStorage::default();
+        let mut app = App::new(storage);
 
         app.add_new_task();
         app.nest_task();
@@ -226,8 +226,8 @@ mod tests {
 
     #[test]
     fn test_get_back_to_parent() {
-        let repository = AppTreeRepository::default();
-        let mut app = App::new(repository);
+        let storage = AppTreeStorage::default();
+        let mut app = App::new(storage);
 
         app.add_new_task();
         app.nest_task();
@@ -239,8 +239,8 @@ mod tests {
 
     #[test]
     fn test_init_insert_mode() {
-        let repository = AppTreeRepository::default();
-        let mut app = App::new(repository);
+        let storage = AppTreeStorage::default();
+        let mut app = App::new(storage);
 
         app.add_new_task();
         app.init_insert_mode_to_edit_a_task_title();
@@ -250,8 +250,8 @@ mod tests {
 
     #[test]
     fn test_cancel_insert_mode() {
-        let repository = AppTreeRepository::default();
-        let mut app = App::new(repository);
+        let storage = AppTreeStorage::default();
+        let mut app = App::new(storage);
 
         app.add_new_task();
         app.init_insert_mode_to_edit_a_task_title();

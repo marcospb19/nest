@@ -9,11 +9,11 @@ use crate::entities::{TaskData, TaskEntity};
 static FILE_PATH: &str = "state.json";
 
 #[derive(Default, Debug, Serialize, Deserialize)]
-pub struct AppTreeRepository {
+pub struct AppTreeStorage {
     pub tasks: HashMap<u64, TaskEntity>,
 }
 
-impl AppTreeRepository {
+impl AppTreeStorage {
     pub fn insert_task(&mut self, task_data: TaskData) {
         let task_entity = self.create_task_entity(task_data);
         self.tasks.insert(task_entity.id, task_entity);
@@ -95,9 +95,9 @@ impl AppTreeRepository {
         Ok(())
     }
 
-    pub fn load_state() -> Result<AppTreeRepository> {
+    pub fn load_state() -> Result<AppTreeStorage> {
         fs::read_to_string(FILE_PATH)
             .and_then(|json| serde_json::from_str(&json).map_err(|err| err.into()))
-            .or_else(|_| Ok(AppTreeRepository::default()))
+            .or_else(|_| Ok(AppTreeStorage::default()))
     }
 }

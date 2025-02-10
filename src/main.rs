@@ -2,7 +2,7 @@ mod app;
 mod entities;
 mod log;
 mod render;
-mod repository;
+mod storage;
 
 use std::{
     io::{self},
@@ -22,9 +22,9 @@ use self::render::render_app;
 fn main() -> Result<()> {
     color_eyre::install()?;
 
-    let repository = repository::AppTreeRepository::load_state()?;
+    let storage = storage::AppTreeStorage::load_state()?;
 
-    let app = App::new(repository);
+    let app = App::new(storage);
 
     // let app = load_state()?.map_or_else(App::new, State::into_app);
 
@@ -56,7 +56,7 @@ fn run(mut app: App, terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> R
         // let selection_changed = selection != app.selection_index();
         // let contents_changed = contents != app.trees;
 
-        app.repository.save()?;
+        app.storage.save()?;
 
         // if contents_changed || selection_changed {
         //     save_state(&State::from_app(&app))?;
