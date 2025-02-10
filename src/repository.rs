@@ -1,6 +1,5 @@
 use std::{
     collections::HashMap,
-    io::Write,
     time::{SystemTime, UNIX_EPOCH},
 };
 
@@ -104,17 +103,8 @@ impl AppTreeRepository {
     }
 
     pub fn load_state() -> Result<AppTreeRepository> {
-        if let Ok(json) = fs::read_to_string(FILE_PATH) {
-            if let Ok(state) = serde_json::from_str(&json) {
-                return Ok(state);
-            }
-        }
-
-        let default_state = AppTreeRepository::default();
-        let default_json = serde_json::to_string_pretty(&default_state)?;
-        let mut file = fs::File::create(FILE_PATH)?;
-        file.write_all(default_json.as_bytes())?;
-
-        Ok(default_state)
+        fs::read_to_string(FILE_PATH)
+            .and_then(|json| serde_json::from_str(&json).map_err(|err| err.into()))
+            .or_else(|_| Ok(AppTreeRepository::default()))
     }
 }
