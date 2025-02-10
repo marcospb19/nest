@@ -71,7 +71,7 @@ fn run(mut app: App, terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> R
 fn handle_input(app: &mut App) -> Result<ControlFlow<()>> {
     use KeyCode::*;
 
-    if let app::AppState::INSERT(_) = app.state {
+    if let app::AppState::INSERT { .. } = app.state {
         if let ratatui::crossterm::event::Event::Key(key) = ratatui::crossterm::event::read()? {
             if key.code == ratatui::crossterm::event::KeyCode::Esc {
                 app.cancel_insert_mode();

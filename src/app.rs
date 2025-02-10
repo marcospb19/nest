@@ -10,7 +10,9 @@ const NEW_ELEMENT_TEXT: &str = "New task.";
 
 pub enum AppState {
     NORMAL,
-    INSERT(u64),
+    INSERT {
+        task_id: u64
+    },
 }
 
 pub struct App<'a> {
@@ -149,7 +151,7 @@ impl App<'_> {
 
         self.text_area = TextArea::from([title_to_edit]);
         self.text_area.move_cursor(tui_textarea::CursorMove::End);
-        self.state = AppState::INSERT(task_id);
+        self.state = AppState::INSERT { task_id };
         Some(())
     }
 
@@ -158,7 +160,7 @@ impl App<'_> {
     }
 
     pub fn close_insert_mode_updating_task_title(&mut self) {
-        if let AppState::INSERT(task_id) = self.state {
+        if let AppState::INSERT{ task_id } = self.state {
             let content = self.text_area.lines().join("\n");
             if !content.is_empty() {
                 self.repository.update_task_title(task_id, content);
@@ -251,7 +253,7 @@ mod tests {
         app.add_new_task();
         app.init_insert_mode_to_edit_a_task_title();
 
-        assert!(matches!(app.state, AppState::INSERT(_)));
+        assert!(matches!(app.state, AppState::INSERT{ .. }));
     }
 
     #[test]
