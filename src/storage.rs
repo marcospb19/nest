@@ -4,13 +4,13 @@ use color_eyre::Result;
 use fs_err as fs;
 use serde::{Deserialize, Serialize};
 
-use crate::entities::{TaskData, TaskEntity};
+use crate::entities::{TaskData, Task};
 
 static FILE_PATH: &str = "state.json";
 
 #[derive(Default, Debug, Serialize, Deserialize)]
 pub struct AppTreeStorage {
-    pub tasks: HashMap<u64, TaskEntity>,
+    pub tasks: HashMap<u64, Task>,
 }
 
 impl AppTreeStorage {
@@ -27,11 +27,11 @@ impl AppTreeStorage {
         self.tasks.entry(parent_id).or_default().children.push(task_entity.id);
     }
 
-    pub fn get_task(&self, task_id: u64) -> Option<&TaskEntity> {
+    pub fn get_task(&self, task_id: u64) -> Option<&Task> {
         self.tasks.get(&task_id)
     }
 
-    pub fn find_parents_stack(&self, task_id: u64) -> Vec<&TaskEntity> {
+    pub fn find_parents_stack(&self, task_id: u64) -> Vec<&Task> {
         let mut parents = Vec::new();
         let mut current_id = task_id;
         while let Some(task) = self.tasks.get(&current_id) {
@@ -44,14 +44,14 @@ impl AppTreeStorage {
         parents
     }
 
-    pub fn find_root_tasks(&self) -> Vec<&TaskEntity> {
+    pub fn find_root_tasks(&self) -> Vec<&Task> {
         self.tasks
             .values()
             .filter(|task| task.parent_id.is_none())
             .collect::<Vec<_>>()
     }
 
-    pub fn find_sub_tasks(&self, parent_id: u64) -> Vec<&TaskEntity> {
+    pub fn find_sub_tasks(&self, parent_id: u64) -> Vec<&Task> {
         match self.tasks.get(&parent_id) {
             None => vec![],
             Some(parent_task) => parent_task
@@ -62,7 +62,7 @@ impl AppTreeStorage {
         }
     }
 
-    pub fn remove_task(&mut self, task_id: u64) -> Option<TaskEntity> {
+    pub fn remove_task(&mut self, task_id: u64) -> Option<Task> {
         let parent_id = self.tasks.get(&task_id).and_then(|task| task.parent_id);
 
         if let Some(parent_id) = parent_id {
@@ -80,8 +80,8 @@ impl AppTreeStorage {
         self.tasks.entry(task_id).and_modify(|task| task.title = new_title);
     }
 
-    fn create_task_entity(&self, task_data: TaskData) -> TaskEntity {
-        let mut task = TaskEntity::default().with_data(task_data);
+    fn create_task_entity(&self, task_data: TaskData) -> Task {
+        let mut task = Task::default().with_data(task_data);
 
         let biggest_id = self.tasks.keys().max().unwrap_or(&0);
         task.id = biggest_id + 1;

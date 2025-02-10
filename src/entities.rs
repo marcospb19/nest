@@ -8,7 +8,7 @@ pub struct TaskData {
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct TaskEntity {
+pub struct Task {
     pub id: u64,
     pub parent_id: Option<u64>,
     pub title: String,
@@ -16,9 +16,9 @@ pub struct TaskEntity {
     pub done: bool,
 }
 
-impl TaskEntity {
+impl Task {
     pub fn with_data(self, data: TaskData) -> Self {
-        TaskEntity {
+        Task {
             id: self.id,
             parent_id: self.parent_id,
             title: data.title,
@@ -28,8 +28,8 @@ impl TaskEntity {
     }
 }
 
-impl From<TaskEntity> for TaskData {
-    fn from(data: TaskEntity) -> Self {
+impl From<Task> for TaskData {
+    fn from(data: Task) -> Self {
         TaskData {
             title: data.title,
             children: data.children,

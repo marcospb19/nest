@@ -2,7 +2,7 @@ use ratatui::widgets::ListState;
 use tui_textarea::TextArea;
 
 use crate::{
-    entities::{TaskData, TaskEntity},
+    entities::{TaskData, Task},
     storage::AppTreeStorage,
 };
 
@@ -42,11 +42,11 @@ impl App<'_> {
         }
     }
 
-    pub fn get_selected_task(&self) -> Option<&TaskEntity> {
+    pub fn get_selected_task(&self) -> Option<&Task> {
         self.find_tasks_to_display().get(self.selection_index).copied()
     }
 
-    pub fn find_tasks_to_display(&self) -> Vec<&TaskEntity> {
+    pub fn find_tasks_to_display(&self) -> Vec<&Task> {
         if let Some(task_id) = self.opened_task {
             self.storage.find_sub_tasks(task_id)
         } else {
