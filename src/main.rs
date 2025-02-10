@@ -72,10 +72,12 @@ fn handle_input(app: &mut App) -> Result<ControlFlow<()>> {
     use KeyCode::*;
 
     if let app::AppState::INSERT { .. } = app.state {
-        if let ratatui::crossterm::event::Event::Key(key) = ratatui::crossterm::event::read()? {
-            if key.code == ratatui::crossterm::event::KeyCode::Esc {
+        use ratatui::crossterm::event;
+        
+        if let event::Event::Key(key) = event::read()? {
+            if key.code == event::KeyCode::Esc {
                 app.cancel_insert_mode();
-            } else if key.code == ratatui::crossterm::event::KeyCode::Enter {
+            } else if key.code == event::KeyCode::Enter {
                 app.close_insert_mode_updating_task_title();
             } else {
                 app.text_area.input(key);
