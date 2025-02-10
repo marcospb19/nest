@@ -121,13 +121,9 @@ impl App<'_> {
     }
 
     pub fn nest_task(&mut self) {
-        let task_to_nest = self.get_selected_task();
-        match task_to_nest {
-            None => (),
-            Some(new_parent_task_id) => {
-                self.opened_task = Some(new_parent_task_id.id);
-                self.scroll_to_top();
-            }
+        if let Some(new_parent_task_id) = self.get_selected_task() {
+            self.opened_task = Some(new_parent_task_id.id);
+            self.scroll_to_top();
         }
     }
 
