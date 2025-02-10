@@ -15,16 +15,16 @@ pub struct AppTreeStorage {
 
 impl AppTreeStorage {
     pub fn insert_task(&mut self, task_data: TaskData) {
-        let task_entity = self.create_task_entity(task_data);
-        self.tasks.insert(task_entity.id, task_entity);
+        let task = self.create_task(task_data);
+        self.tasks.insert(task.id, task);
     }
 
     pub fn insert_sub_task(&mut self, parent_id: u64, task_data: TaskData) {
-        let mut task_entity = self.create_task_entity(task_data);
-        task_entity.parent_id = Some(parent_id);
+        let mut task = self.create_task(task_data);
+        task.parent_id = Some(parent_id);
 
-        self.tasks.insert(task_entity.id, task_entity.clone());
-        self.tasks.entry(parent_id).or_default().children.push(task_entity.id);
+        self.tasks.insert(task.id, task.clone());
+        self.tasks.entry(parent_id).or_default().children.push(task.id);
     }
 
     pub fn get_task(&self, task_id: u64) -> Option<&Task> {
@@ -80,7 +80,7 @@ impl AppTreeStorage {
         self.tasks.entry(task_id).and_modify(|task| task.title = new_title);
     }
 
-    fn create_task_entity(&self, task_data: TaskData) -> Task {
+    fn create_task(&self, task_data: TaskData) -> Task {
         let mut task = Task::default().with_data(task_data);
 
         let biggest_id = self.tasks.keys().max().unwrap_or(&0);

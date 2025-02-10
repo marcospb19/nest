@@ -133,8 +133,8 @@ impl App<'_> {
 
     pub fn get_back_to_parent(&mut self) -> Option<()> {
         let current_parent_task_id = self.opened_task?;
-        let current_parent_task_entity = self.storage.get_task(current_parent_task_id)?;
-        let next_parent_task_id = current_parent_task_entity.parent_id;
+        let current_parent_task = self.storage.get_task(current_parent_task_id)?;
+        let next_parent_task_id = current_parent_task.parent_id;
 
         self.opened_task = next_parent_task_id;
         self.scroll_to_top();
