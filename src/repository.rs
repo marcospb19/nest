@@ -1,7 +1,4 @@
-use std::{
-    collections::HashMap,
-    time::{SystemTime, UNIX_EPOCH},
-};
+use std::collections::HashMap;
 
 use color_eyre::Result;
 use fs_err as fs;
@@ -18,12 +15,12 @@ pub struct AppTreeRepository {
 
 impl AppTreeRepository {
     pub fn insert_task(&mut self, task_data: TaskData) {
-        let task_entity = Self::create_task_entity(task_data);
+        let task_entity = self.create_task_entity(task_data);
         self.tasks.insert(task_entity.id, task_entity);
     }
 
     pub fn insert_sub_task(&mut self, parent_id: u64, task_data: TaskData) {
-        let mut task_entity = Self::create_task_entity(task_data);
+        let mut task_entity = self.create_task_entity(task_data);
         task_entity.parent_id = Some(parent_id);
 
         self.tasks.insert(task_entity.id, task_entity.clone());
@@ -83,15 +80,11 @@ impl AppTreeRepository {
         self.tasks.entry(task_id).and_modify(|task| task.title = new_title);
     }
 
-    fn create_task_entity(task_data: TaskData) -> TaskEntity {
-        let start = SystemTime::now();
-        let timestamp = start
-            .duration_since(UNIX_EPOCH)
-            .expect("Time went backwards")
-            .as_millis() as u64;
-
+    fn create_task_entity(&self, task_data: TaskData) -> TaskEntity {
         let mut task = TaskEntity::default().with_data(task_data);
-        task.id = timestamp;
+
+        let biggest_id = self.tasks.keys().max().unwrap_or(&0);
+        task.id = biggest_id + 1;
 
         task
     }
