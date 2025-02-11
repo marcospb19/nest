@@ -99,6 +99,7 @@ fn handle_input(app: &mut App) -> Result<ControlFlow<()>> {
                 Char('e') => _ = app.init_insert_mode_to_edit_a_task_title(),
                 // Char('u') => app.undo_change(),
                 // Char('r') if key.modifiers.contains(KeyModifiers::CONTROL) => app.redo_change(),
+                Tab => app.update_done_state(),
                 Enter | Right => app.nest_task(),
                 Esc | Left | Backspace => _ = app.get_back_to_parent(),
                 Up => app.move_selection_up(),
