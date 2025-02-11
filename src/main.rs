@@ -69,43 +69,54 @@ fn run(mut app: App, terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> R
 }
 
 fn handle_input(app: &mut App) -> Result<ControlFlow<()>> {
-    use KeyCode::*;
+    // use KeyCode::*;
+    
+    use ratatui::crossterm::event::KeyCode::*;
+    use ratatui::crossterm::event::KeyEventKind;
+    use ratatui::crossterm::event;
 
-    if let app::AppState::Insert { .. } = app.state {
-        use ratatui::crossterm::event;
 
-        if let event::Event::Key(key) = event::read()? {
-            if key.code == event::KeyCode::Esc {
-                app.cancel_insert_mode();
-            } else if key.code == event::KeyCode::Enter {
-                app.close_insert_mode_updating_task_title();
-            } else {
-                app.text_area.input(key);
-            }
-        }
-        return Ok(ControlFlow::Continue(()));
-    }
-
-    if let Event::Key(key) = event::read()? {
-        if key.kind == KeyEventKind::Press {
-            match key.code {
-                Char('q') => return Ok(ControlFlow::Break(())),
-                Char('d') => _ = app.delete_current_task(),
-                Char('n') => {
-                    app.add_new_task();
+    if let event::Event::Key(key) = event::read()? {
+        match app.state {
+            app::AppState::Normal if key.kind == KeyEventKind::Press  => {
+                match key.code {
+                    Char('q') => return Ok(ControlFlow::Break(())),
+                    Char('d') => _ = app.delete_current_task(),
+                    Char('g') => app.scroll_to_top(),
+                    Char('G') => app.scroll_to_bottom(),
+                    Char('n') => {
+                        app.init_insert_mode_to_insert_new_task();
+                    }
+                    Char('e') => _ = app.init_insert_mode_to_edit_task_title(),
+                    // Char('u') => app.undo_change(),
+                    // Char('r') if key.modifiers.contains(KeyModifiers::CONTROL) => app.redo_change(),
+                    Enter | Right => app.nest_task(),
+                    Esc | Left | Backspace => _ = app.get_back_to_parent(),
+                    Up => app.move_selection_up(),
+                    Down => app.move_selection_down(),
+                    Tab => app.update_done_state(),
+                    _ => {}
                 }
-                Char('g') => app.scroll_to_top(),
-                Char('G') => app.scroll_to_bottom(),
-                Char('e') => _ = app.init_insert_mode_to_edit_a_task_title(),
-                // Char('u') => app.undo_change(),
-                // Char('r') if key.modifiers.contains(KeyModifiers::CONTROL) => app.redo_change(),
-                Tab => app.update_done_state(),
-                Enter | Right => app.nest_task(),
-                Esc | Left | Backspace => _ = app.get_back_to_parent(),
-                Up => app.move_selection_up(),
-                Down => app.move_selection_down(),
-                _ => {}
             }
+            app::AppState::InsertTask { parent_id } => {
+                match key.code {
+                    Esc => app.cancel_insert_mode(),
+                    Enter => app.close_insert_mode_inserting_new_task(),
+                    _ => {
+                        app.text_area.input(key);
+                    },
+                }
+            }
+            app::AppState::EditTask { task_id } => {
+                match key.code {
+                    Esc => app.cancel_insert_mode(),
+                    Enter => app.close_insert_mode_updating_task_title(),
+                    _ => {
+                        app.text_area.input(key);
+                    },
+                }
+            }
+            _ => {}
         }
     }
 

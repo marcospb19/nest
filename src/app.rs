@@ -10,7 +10,8 @@ const NEW_ELEMENT_TEXT: &str = "New task.";
 
 pub enum AppState {
     Normal,
-    Insert { task_id: u64 },
+    EditTask { task_id: u64 },
+    InsertTask { parent_id: Option<u64> },
 }
 
 pub struct App<'a> {
@@ -76,9 +77,9 @@ impl App<'_> {
         self.storage.remove_task(id_to_delete).map(|task| task.id)
     }
 
-    pub fn add_new_task(&mut self) {
+    pub fn add_new_task(&mut self, title: String) {
         let new_task = TaskData {
-            title: String::from(NEW_ELEMENT_TEXT),
+            title,
             children: vec![],
             done: false,
         };
@@ -143,7 +144,14 @@ impl App<'_> {
         Some(())
     }
 
-    pub fn init_insert_mode_to_edit_a_task_title(&mut self) -> Option<()> {
+    pub fn init_insert_mode_to_insert_new_task(&mut self) -> Option<()> {
+        let parent_id = self.opened_task;
+        self.state = AppState::InsertTask { parent_id };
+        self.text_area = TextArea::default();
+        Some(())
+    }
+
+    pub fn init_insert_mode_to_edit_task_title(&mut self) -> Option<()> {
         let selected_task = self.get_selected_task()?;
 
         let task_id = selected_task.id;
@@ -151,7 +159,7 @@ impl App<'_> {
 
         self.text_area = TextArea::from([title_to_edit]);
         self.text_area.move_cursor(tui_textarea::CursorMove::End);
-        self.state = AppState::Insert { task_id };
+        self.state = AppState::EditTask { task_id };
         Some(())
     }
 
@@ -160,13 +168,37 @@ impl App<'_> {
     }
 
     pub fn close_insert_mode_updating_task_title(&mut self) {
-        if let AppState::Insert { task_id } = self.state {
+        if let AppState::EditTask { task_id } = self.state {
+            self.state = AppState::Normal;
             let content = self.text_area.lines().join("\n");
-            if !content.is_empty() {
-                self.storage.update_task_title(task_id, content);
+
+            if content.is_empty() {
+                return;
             }
 
+            self.storage.update_task_title(task_id, content);
+        }
+    }
+
+    pub fn close_insert_mode_inserting_new_task(&mut self) {
+        if let AppState::InsertTask { parent_id } = self.state {
             self.state = AppState::Normal;
+            let content = self.text_area.lines().join("\n");
+
+            if content.is_empty() {
+                return;
+            }
+
+            let task_data = TaskData {
+                title: content,
+                children: vec![],
+                done: false,
+            };
+
+            match parent_id {
+                Some(parent_id) => self.storage.insert_sub_task(parent_id,task_data),
+                None => self.storage.insert_task(task_data),
+            }
         }
     }
 }
@@ -247,7 +279,7 @@ mod tests {
         app.add_new_task();
         app.init_insert_mode_to_edit_a_task_title();
 
-        assert!(matches!(app.state, AppState::Insert { .. }));
+        assert!(matches!(app.state, AppState::EditTask { .. }));
     }
 
     #[test]
