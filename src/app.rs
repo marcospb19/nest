@@ -75,25 +75,6 @@ impl App<'_> {
         self.storage.remove_task(id_to_delete).map(|task| task.id)
     }
 
-    pub fn add_new_task(&mut self, title: String) {
-        let new_task = TaskData {
-            title,
-            children: vec![],
-            done: false,
-        };
-
-        match self.opened_task {
-            Some(parent_task_id) => {
-                self.storage.insert_sub_task(parent_task_id, new_task);
-            }
-            None => {
-                self.storage.insert_task(new_task);
-            }
-        }
-
-        self.move_display_to(self.find_tasks_to_display().len().checked_sub(1));
-    }
-
     pub fn move_display_to(&mut self, index: Option<usize>) {
         let max_index = self.find_tasks_to_display().len().saturating_sub(1);
         let index = index.filter(|n| *n <= max_index);
@@ -194,7 +175,7 @@ impl App<'_> {
             };
 
             match parent_id {
-                Some(parent_id) => self.storage.insert_sub_task(parent_id,task_data),
+                Some(parent_id) => self.storage.insert_sub_task(parent_id, task_data),
                 None => self.storage.insert_task(task_data),
             }
         }
