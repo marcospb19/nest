@@ -4,7 +4,7 @@ use color_eyre::Result;
 use fs_err as fs;
 use serde::{Deserialize, Serialize};
 
-use crate::entities::{TaskData, Task};
+use crate::entities::{Task, TaskData};
 
 static FILE_PATH: &str = "state.json";
 
@@ -78,6 +78,10 @@ impl AppTreeStorage {
 
     pub fn update_task_title(&mut self, task_id: u64, new_title: String) {
         self.tasks.entry(task_id).and_modify(|task| task.title = new_title);
+    }
+
+    pub fn update_task_state(&mut self, task_id: u64, done: bool) {
+        self.tasks.entry(task_id).and_modify(|task| task.done = done);
     }
 
     fn create_task(&self, task_data: TaskData) -> Task {

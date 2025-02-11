@@ -2,7 +2,7 @@ use ratatui::widgets::ListState;
 use tui_textarea::TextArea;
 
 use crate::{
-    entities::{TaskData, Task},
+    entities::{Task, TaskData},
     storage::AppTreeStorage,
 };
 
@@ -125,6 +125,12 @@ impl App<'_> {
             self.opened_task = Some(new_parent_task_id.id);
             self.scroll_to_top();
         }
+    }
+
+    pub fn update_done_state(&mut self) {
+        let selected_task = self.get_selected_task().unwrap();
+        let new_done_state = !selected_task.done;
+        self.storage.update_task_state(selected_task.id, new_done_state);
     }
 
     pub fn get_back_to_parent(&mut self) -> Option<()> {
