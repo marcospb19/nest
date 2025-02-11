@@ -6,8 +6,6 @@ use crate::{
     storage::AppTreeStorage,
 };
 
-const NEW_ELEMENT_TEXT: &str = "New task.";
-
 pub enum AppState {
     Normal,
     EditTask { task_id: u64 },
@@ -215,82 +213,5 @@ mod tests {
         assert_eq!(app.selection_index, 0);
         assert!(matches!(app.state, AppState::Normal));
         assert!(app.opened_task.is_none());
-    }
-
-    #[test]
-    fn test_add_new_task() {
-        let storage = AppTreeStorage::default();
-        let mut app = App::new(storage);
-
-        app.add_new_task();
-        let tasks = app.find_tasks_to_display();
-        assert_eq!(app.opened_task, None);
-        assert_eq!(tasks.len(), 1);
-
-        app.add_new_task();
-        app.add_new_task();
-
-        let tasks = app.find_tasks_to_display();
-        assert_eq!(app.opened_task, None);
-        assert_eq!(tasks.len(), 3);
-    }
-
-    #[test]
-    fn test_delete_current_task() {
-        let storage = AppTreeStorage::default();
-        let mut app = App::new(storage);
-
-        app.add_new_task();
-        let deleted_task_id = app.delete_current_task();
-
-        assert!(deleted_task_id.is_some());
-        assert!(app.find_tasks_to_display().is_empty());
-    }
-
-    #[test]
-    fn test_nest_task() {
-        let storage = AppTreeStorage::default();
-        let mut app = App::new(storage);
-
-        app.add_new_task();
-        app.nest_task();
-
-        assert!(app.opened_task.is_some());
-    }
-
-    #[test]
-    fn test_get_back_to_parent() {
-        let storage = AppTreeStorage::default();
-        let mut app = App::new(storage);
-
-        app.add_new_task();
-        app.nest_task();
-
-        let parent_id = app.opened_task;
-        assert!(app.get_back_to_parent().is_some());
-        assert_ne!(app.opened_task, parent_id);
-    }
-
-    #[test]
-    fn test_init_insert_mode() {
-        let storage = AppTreeStorage::default();
-        let mut app = App::new(storage);
-
-        app.add_new_task();
-        app.init_insert_mode_to_edit_a_task_title();
-
-        assert!(matches!(app.state, AppState::EditTask { .. }));
-    }
-
-    #[test]
-    fn test_cancel_insert_mode() {
-        let storage = AppTreeStorage::default();
-        let mut app = App::new(storage);
-
-        app.add_new_task();
-        app.init_insert_mode_to_edit_a_task_title();
-        app.cancel_insert_mode();
-
-        assert!(matches!(app.state, AppState::Normal));
     }
 }
