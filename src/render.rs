@@ -1,8 +1,8 @@
 use ratatui::{
     Frame,
     layout::{Constraint, Direction, Layout, Margin, Rect},
-    style::{Color, Style, Stylize},
-    text::Line,
+    style::{Color, Modifier, Style, Stylize},
+    text::{Line, Span},
     widgets::{Block, BorderType, Borders, List, ListItem},
 };
 
@@ -34,7 +34,13 @@ pub fn render_app(frame: &mut Frame, app: &mut App) {
 
         let elements = viewed_nodes
             .iter()
-            .map(|item| item.title.clone())
+            .map(|task| {
+                let mut span = Span::from(task.title.clone());
+                if task.done {
+                    span = span.add_modifier(Modifier::CROSSED_OUT).add_modifier(Modifier::DIM)
+                }
+                span
+            })
             .map(Line::from)
             .map(ListItem::new);
 
