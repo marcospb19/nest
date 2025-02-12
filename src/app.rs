@@ -98,7 +98,7 @@ impl App<'_> {
     pub fn swap_up(&mut self) -> Option<()> {
         let parent_id = self.opened_task;
         let from = self.elements_list.selected()?;
-        let to = from.checked_sub(1).unwrap_or(0);
+        let to = from.saturating_sub(1);
         if from != to {
             self.storage.swap_sub_tasks(parent_id, from, to);
             self.move_selection_up();

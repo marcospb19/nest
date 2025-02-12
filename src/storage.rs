@@ -72,7 +72,7 @@ impl AppTreeStorage {
                 .retain(|id| *id != task_id);
         }
 
-        self.tasks.remove(&task_id)
+        self.tasks.swap_remove(&task_id)
     }
 
     pub fn update_task_title(&mut self, task_id: u64, new_title: String) {
