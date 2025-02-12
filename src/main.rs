@@ -45,19 +45,9 @@ fn run(mut app: App, terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> R
     loop {
         terminal.draw(|frame| render_app(frame, &mut app))?;
 
-        // let selection = app.selection_index();
-        // let contents = app.trees.clone();
-
         let flow = handle_input(&mut app)?;
 
-        // let selection_changed = selection != app.selection_index();
-        // let contents_changed = contents != app.trees;
-
         app.storage.save()?;
-
-        // if contents_changed || selection_changed {
-        //     save_state(&State::from_app(&app))?;
-        // }
 
         if flow == ControlFlow::Break(()) {
             break Ok(());
@@ -75,26 +65,20 @@ fn handle_input(app: &mut App) -> Result<ControlFlow<()>> {
 
     if let event::Event::Key(key) = event::read()? {
         match app.state {
-            app::AppState::Normal if key.kind == KeyEventKind::Press => {
-                match key.code {
-                    Char('q') => return Ok(ControlFlow::Break(())),
-                    Char('d') => _ = app.delete_current_task(),
-                    Char('g') => app.scroll_to_top(),
-                    Char('G') => app.scroll_to_bottom(),
-                    Char('n') => {
-                        app.init_insert_mode_to_insert_new_task();
-                    }
-                    Char('e') => _ = app.init_insert_mode_to_edit_task_title(),
-                    // Char('u') => app.undo_change(),
-                    // Char('r') if key.modifiers.contains(KeyModifiers::CONTROL) => app.redo_change(),
-                    Enter | Right => app.nest_task(),
-                    Esc | Left | Backspace => _ = app.get_back_to_parent(),
-                    Up => app.move_selection_up(),
-                    Down => app.move_selection_down(),
-                    Tab => app.update_done_state(),
-                    _ => {}
-                }
-            }
+            app::AppState::Normal if key.kind == KeyEventKind::Press => match key.code {
+                Char('q') => return Ok(ControlFlow::Break(())),
+                Char('g') => app.scroll_to_top(),
+                Char('G') => app.scroll_to_bottom(),
+                Char('d') => _ = app.delete_current_task(),
+                Char('n') => _ = app.init_insert_mode_to_insert_new_task(),
+                Char('e') => _ = app.init_insert_mode_to_edit_task_title(),
+                Enter | Right => app.nest_task(),
+                Esc | Left | Backspace => _ = app.get_back_to_parent(),
+                Up => app.move_selection_up(),
+                Down => app.move_selection_down(),
+                Tab => app.update_done_state(),
+                _ => {}
+            },
             app::AppState::InsertTask { .. } => match key.code {
                 Esc => app.cancel_insert_mode(),
                 Enter => app.close_insert_mode_inserting_new_task(),
