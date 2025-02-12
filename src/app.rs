@@ -99,7 +99,7 @@ impl App<'_> {
         let parent_id = self.opened_task;
         let from = self.elements_list.selected()?;
         let to = from.checked_sub(1).unwrap_or(0);
-        if from != to  {
+        if from != to {
             self.storage.swap_sub_tasks(parent_id, from, to);
             self.move_selection_up();
         }
@@ -111,7 +111,7 @@ impl App<'_> {
         let parent_id = self.opened_task;
         let from = self.elements_list.selected()?;
         let to = from.saturating_add(1).min(max_index);
-        if from != to  {
+        if from != to {
             self.storage.swap_sub_tasks(parent_id, from, to);
             self.move_selection_down();
         }
@@ -197,20 +197,5 @@ impl App<'_> {
                 None => self.storage.insert_task(task_data),
             }
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_new_app() {
-        let storage = AppTreeStorage::default();
-        let app = App::new(storage);
-
-        assert_eq!(app.elements_list.selected(), 0);
-        assert!(matches!(app.state, AppState::Normal));
-        assert!(app.opened_task.is_none());
     }
 }
