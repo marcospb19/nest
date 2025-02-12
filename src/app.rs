@@ -16,7 +16,6 @@ pub struct App<'a> {
     pub storage: AppTreeStorage,
 
     pub opened_task: Option<u64>,
-    pub selection_index: usize,
 
     pub elements_list: ListState,
     pub stack_list: ListState,
@@ -35,14 +34,14 @@ impl App<'_> {
             elements_list,
             stack_list: ListState::default(),
             opened_task: None,
-            selection_index: 0,
             state: AppState::Normal,
             text_area: TextArea::default(),
         }
     }
 
     pub fn get_selected_task(&self) -> Option<&Task> {
-        self.find_tasks_to_display().get(self.selection_index).copied()
+        let selected_index = self.elements_list.selected()?;
+        self.find_tasks_to_display().get(selected_index).copied()
     }
 
     pub fn find_tasks_to_display(&self) -> Vec<&Task> {
@@ -68,17 +67,12 @@ impl App<'_> {
     pub fn delete_current_task(&mut self) -> Option<u64> {
         let id_to_delete = self.get_selected_task()?.id;
 
-        if self.selection_index > 0 {
-            self.selection_index -= 1;
-        }
-
         self.storage.remove_task(id_to_delete).map(|task| task.id)
     }
 
     pub fn move_display_to(&mut self, index: Option<usize>) {
         let max_index = self.find_tasks_to_display().len().saturating_sub(1);
         let index = index.filter(|n| *n <= max_index);
-        self.selection_index = index.unwrap_or(0);
         self.elements_list.select(index);
     }
 
@@ -91,13 +85,37 @@ impl App<'_> {
     }
 
     pub fn move_selection_up(&mut self) {
-        self.move_display_to(self.selection_index.checked_sub(1));
+        let selected_index = self.elements_list.selected().map(|n| n - 1).unwrap_or(0);
+        self.move_display_to(selected_index.into());
     }
 
     pub fn move_selection_down(&mut self) {
         let max_index = self.find_tasks_to_display().len().saturating_sub(1);
-        let new_index = self.selection_index + 1;
-        self.move_display_to(Some(new_index.min(max_index)));
+        let new_index = self.elements_list.selected().map(|n| n + 1).unwrap_or(0);
+        self.move_display_to(new_index.min(max_index).into());
+    }
+
+    pub fn swap_up(&mut self) -> Option<()> {
+        let parent_id = self.opened_task;
+        let from = self.elements_list.selected()?;
+        let to = from.checked_sub(1).unwrap_or(0);
+        if from != to  {
+            self.storage.swap_sub_tasks(parent_id, from, to);
+            self.move_selection_up();
+        }
+        Some(())
+    }
+
+    pub fn swap_down(&mut self) -> Option<()> {
+        let max_index = self.find_tasks_to_display().len().saturating_sub(1);
+        let parent_id = self.opened_task;
+        let from = self.elements_list.selected()?;
+        let to = from.saturating_add(1).min(max_index);
+        if from != to  {
+            self.storage.swap_sub_tasks(parent_id, from, to);
+            self.move_selection_down();
+        }
+        Some(())
     }
 
     pub fn nest_task(&mut self) {
@@ -191,7 +209,7 @@ mod tests {
         let storage = AppTreeStorage::default();
         let app = App::new(storage);
 
-        assert_eq!(app.selection_index, 0);
+        assert_eq!(app.elements_list.selected(), 0);
         assert!(matches!(app.state, AppState::Normal));
         assert!(app.opened_task.is_none());
     }

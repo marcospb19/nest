@@ -72,6 +72,8 @@ fn handle_input(app: &mut App) -> Result<ControlFlow<()>> {
                 Char('d') => _ = app.delete_current_task(),
                 Char('n') => _ = app.init_insert_mode_to_insert_new_task(),
                 Char('e') => _ = app.init_insert_mode_to_edit_task_title(),
+                Char('[') => _ = app.swap_up(),
+                Char(']') => _ = app.swap_down(),
                 Enter | Right => app.nest_task(),
                 Esc | Left | Backspace => _ = app.get_back_to_parent(),
                 Up => app.move_selection_up(),

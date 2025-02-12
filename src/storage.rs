@@ -83,6 +83,19 @@ impl AppTreeStorage {
         self.tasks.entry(task_id).and_modify(|task| task.done = done);
     }
 
+    pub fn swap_sub_tasks(&mut self, parent_id: Option<u64>, from: usize, to: usize) -> Option<()> {
+        match parent_id {
+            Some(parent_id) => {
+                let parent_task = self.tasks.get_mut(&parent_id)?;
+                parent_task.children.swap(from, to);
+            }
+            None => {
+                self.tasks.swap_indices(from, to);
+            }
+        }
+        Some(())
+    }
+
     fn create_task(&self, task_data: TaskData) -> Task {
         let mut task = Task::default().with_data(task_data);
 
