@@ -1,7 +1,6 @@
-use std::collections::HashMap;
-
 use color_eyre::Result;
 use fs_err as fs;
+use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 
 use crate::entities::{Task, TaskData};
@@ -10,7 +9,7 @@ static FILE_PATH: &str = "state.json";
 
 #[derive(Default, Debug, Serialize, Deserialize)]
 pub struct AppTreeStorage {
-    pub tasks: HashMap<u64, Task>,
+    pub tasks: IndexMap<u64, Task>,
 }
 
 impl AppTreeStorage {
