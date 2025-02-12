@@ -78,7 +78,7 @@ pub fn render_app(frame: &mut Frame, app: &mut App) {
         frame.render_stateful_widget(elements_list, layout[0], &mut app.elements_list);
     }
 
-    if let AppState::Insert { .. } = app.state {
+    if let AppState::EditTask { .. } | AppState::InsertTask { .. } = app.state {
         let popup_block = Block::default()
             .title("Enter a new key-value pair")
             .borders(Borders::NONE)
