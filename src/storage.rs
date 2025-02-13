@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, path::PathBuf, sync::LazyLock};
 
 use color_eyre::Result;
 use fs_err as fs;
@@ -6,7 +6,11 @@ use serde::{Deserialize, Serialize};
 
 use crate::entities::{Task, TaskData};
 
-static FILE_PATH: &str = "state.json";
+static FILE_PATH: LazyLock<PathBuf> = std::sync::LazyLock::new(|| {
+    let mut path = PathBuf::from(std::env::var("HOME").expect("There is no $HOME"));
+    path.push("nest_state.json");
+    path
+});
 
 #[derive(Default, Debug, Serialize, Deserialize)]
 pub struct AppTreeStorage {
@@ -95,12 +99,12 @@ impl AppTreeStorage {
 
     pub fn save(&self) -> Result<()> {
         let json = serde_json::to_string_pretty(&self)?;
-        fs::write(FILE_PATH, json)?;
+        fs::write(&*FILE_PATH, json)?;
         Ok(())
     }
 
     pub fn load_state() -> Result<AppTreeStorage> {
-        fs::read_to_string(FILE_PATH)
+        fs::read_to_string(&*FILE_PATH)
             .and_then(|json| serde_json::from_str(&json).map_err(|err| err.into()))
             .or_else(|_| Ok(AppTreeStorage::default()))
     }
