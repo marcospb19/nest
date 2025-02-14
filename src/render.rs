@@ -55,7 +55,7 @@ pub fn render_app(frame: &mut Frame, app: &mut App) {
 
     let elements_view_constraint = Constraint::Min(elements_list.len() as u16);
 
-    let mut selected = ListState::default().with_selected(app.selected_tasks.get(&app.opened_task).cloned());
+    let mut selected = ListState::default().with_selected(app.get_focused_task());
     
     if !app.find_parents_titles().is_empty() {
         let stack_view_constraint = Constraint::Length(2 + app.find_parents_titles().len() as u16);
