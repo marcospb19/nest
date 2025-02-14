@@ -1,9 +1,5 @@
 use ratatui::{
-    Frame,
-    layout::{Constraint, Direction, Layout, Margin, Rect},
-    style::{Color, Modifier, Style, Stylize},
-    text::{Line, Span},
-    widgets::{Block, BorderType, Borders, List, ListItem},
+    layout::{Constraint, Direction, Layout, Margin, Rect}, style::{Color, Modifier, Style, Stylize}, text::{Line, Span}, widgets::{Block, BorderType, Borders, List, ListItem, ListState}, Frame
 };
 
 use crate::app::{App, AppState};
@@ -59,6 +55,8 @@ pub fn render_app(frame: &mut Frame, app: &mut App) {
 
     let elements_view_constraint = Constraint::Min(elements_list.len() as u16);
 
+    let mut selected = ListState::default().with_selected(app.selected_tasks.get(&app.opened_task).cloned());
+    
     if !app.find_parents_titles().is_empty() {
         let stack_view_constraint = Constraint::Length(2 + app.find_parents_titles().len() as u16);
 
@@ -67,15 +65,15 @@ pub fn render_app(frame: &mut Frame, app: &mut App) {
             .constraints([stack_view_constraint, elements_view_constraint])
             .split(entire_area);
 
-        frame.render_stateful_widget(stack_list, layout[0], &mut app.stack_list);
-        frame.render_stateful_widget(elements_list, layout[1], &mut app.elements_list);
+        frame.render_widget(stack_list, layout[0]);
+        frame.render_stateful_widget(elements_list, layout[1], &mut selected);
     } else {
         let layout = Layout::default()
             .direction(Direction::Vertical)
             .constraints([elements_view_constraint])
             .split(entire_area);
 
-        frame.render_stateful_widget(elements_list, layout[0], &mut app.elements_list);
+        frame.render_stateful_widget(elements_list, layout[0], &mut selected);
     }
 
     if let AppState::EditTask { .. } | AppState::InsertTask { .. } = app.state {
