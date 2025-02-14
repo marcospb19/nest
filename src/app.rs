@@ -68,12 +68,12 @@ impl App<'_> {
     }
 
     pub fn delete_selected_task(&mut self) -> Option<u64> {
-        let current_focus = self.get_position_selected_task()?;
+        let current_position = self.get_position_selected_task()?;
 
         let id_to_delete = self.get_selected_task()?.id;
         let removed_task = self.storage.remove_task(id_to_delete)?;
 
-        self.move_selection_to(current_focus.into());
+        self.move_selection_to(current_position.into());
         Some(removed_task.id)
     }
 
@@ -88,19 +88,19 @@ impl App<'_> {
     }
 
     pub fn move_selection_to_bottom(&mut self) {
-        let last_index = self.find_tasks_to_display().len().checked_sub(1);
-        self.move_selection_to(last_index);
+        let last_position = self.find_tasks_to_display().len().checked_sub(1);
+        self.move_selection_to(last_position);
     }
 
     pub fn move_selection_up(&mut self) {
-        let selected_index = self.get_position_selected_task().unwrap_or(0).saturating_sub(1);
-        self.move_selection_to(selected_index.into());
+        let selected_position = self.get_position_selected_task().unwrap_or(0).saturating_sub(1);
+        self.move_selection_to(selected_position.into());
     }
 
     pub fn move_selection_down(&mut self) {
-        let max_index = self.find_tasks_to_display().len().saturating_sub(1);
-        let new_index = self.get_position_selected_task().unwrap_or(0).saturating_add(1);
-        self.move_selection_to(new_index.min(max_index).into());
+        let max_position = self.find_tasks_to_display().len().saturating_sub(1);
+        let new_position = self.get_position_selected_task().unwrap_or(0).saturating_add(1);
+        self.move_selection_to(new_position.min(max_position).into());
     }
 
     pub fn swap_up(&mut self) -> Option<()> {
