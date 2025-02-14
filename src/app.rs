@@ -85,7 +85,7 @@ impl App<'_> {
     }
 
     pub fn move_selection_up(&mut self) {
-        let selected_index = self.elements_list.selected().map(|n| n - 1).unwrap_or(0);
+        let selected_index = self.elements_list.selected().map(|n| n.saturating_sub(1)).unwrap_or(0);
         self.move_display_to(selected_index.into());
     }
 
@@ -132,7 +132,13 @@ impl App<'_> {
     }
 
     pub fn get_back_to_parent(&mut self) -> Option<()> {
+        if self.opened_task.is_none() {
+            self.elements_list.select(None);
+            return None;
+        }
+
         let current_parent_task_id = self.opened_task?;
+
         let current_parent_task = self.storage.get_task(current_parent_task_id)?;
         let next_parent_task_id = current_parent_task.parent_id;
 
