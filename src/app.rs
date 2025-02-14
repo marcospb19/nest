@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use ratatui::widgets::ListState;
 use tui_textarea::TextArea;
 
@@ -16,13 +18,10 @@ pub struct App<'a> {
     pub storage: AppTreeStorage,
 
     pub opened_task: Option<u64>,
-    pub selection_index: usize,
-
-    pub elements_list: ListState,
-    pub stack_list: ListState,
-    pub text_area: TextArea<'a>,
-
+    pub selections_in_tasks: HashMap<Option<u64>, usize>,
+    
     pub state: AppState,
+    pub text_area: TextArea<'a>,
 }
 
 impl App<'_> {
@@ -32,17 +31,20 @@ impl App<'_> {
 
         Self {
             storage,
-            elements_list,
-            stack_list: ListState::default(),
+            selections_in_tasks: HashMap::new(),
             opened_task: None,
-            selection_index: 0,
             state: AppState::Normal,
             text_area: TextArea::default(),
         }
     }
 
+    pub fn get_position_selected_task(&self) -> Option<usize> {
+        self.selections_in_tasks.get(&self.opened_task).cloned()
+    }
+
     pub fn get_selected_task(&self) -> Option<&Task> {
-        self.find_tasks_to_display().get(self.selection_index).copied()
+        let selected_index = self.get_position_selected_task()?;
+        self.find_tasks_to_display().get(selected_index).copied()
     }
 
     pub fn find_tasks_to_display(&self) -> Vec<&Task> {
@@ -65,45 +67,84 @@ impl App<'_> {
         }
     }
 
-    pub fn delete_current_task(&mut self) -> Option<u64> {
+    pub fn delete_selected_task(&mut self) -> Option<u64> {
+        let current_position = self.get_position_selected_task()?;
+
         let id_to_delete = self.get_selected_task()?.id;
+        let removed_task = self.storage.remove_task(id_to_delete)?;
 
-        if self.selection_index > 0 {
-            self.selection_index -= 1;
-        }
-
-        self.storage.remove_task(id_to_delete).map(|task| task.id)
+        self.move_selection_to(current_position.into());
+        Some(removed_task.id)
     }
 
-    pub fn move_display_to(&mut self, index: Option<usize>) {
+    pub fn move_selection_to(&mut self, index: Option<usize>) {
         let max_index = self.find_tasks_to_display().len().saturating_sub(1);
-        let index = index.filter(|n| *n <= max_index);
-        self.selection_index = index.unwrap_or(0);
-        self.elements_list.select(index);
+        let new_index = index.unwrap_or(0).max(0).min(max_index);
+        self.selections_in_tasks.insert(self.opened_task, new_index);
     }
 
-    pub fn scroll_to_top(&mut self) {
-        self.move_display_to(Some(0))
+    pub fn move_selection_to_top(&mut self) {
+        self.move_selection_to(Some(0))
     }
 
-    pub fn scroll_to_bottom(&mut self) {
-        self.move_display_to(self.find_tasks_to_display().len().checked_sub(1));
+    pub fn move_selection_to_bottom(&mut self) {
+        let last_position = self.find_tasks_to_display().len().checked_sub(1);
+        self.move_selection_to(last_position);
     }
 
     pub fn move_selection_up(&mut self) {
-        self.move_display_to(self.selection_index.checked_sub(1));
+        let selected_position = self.get_position_selected_task().unwrap_or(0).saturating_sub(1);
+        self.move_selection_to(selected_position.into());
     }
 
     pub fn move_selection_down(&mut self) {
-        let max_index = self.find_tasks_to_display().len().saturating_sub(1);
-        let new_index = self.selection_index + 1;
-        self.move_display_to(Some(new_index.min(max_index)));
+        let max_position = self.find_tasks_to_display().len().saturating_sub(1);
+        let new_position = self.get_position_selected_task().unwrap_or(0).saturating_add(1);
+        self.move_selection_to(new_position.min(max_position).into());
     }
 
-    pub fn nest_task(&mut self) {
+    pub fn swap_up(&mut self) -> Option<()> {
+        let parent_id = self.opened_task;
+
+        let tasks = self.find_tasks_to_display();
+
+        let from_index = self.get_position_selected_task()?;
+        let to_index = from_index.saturating_sub(1);
+
+        let from_id = tasks.get(from_index)?.id;
+        let to_id = tasks.get(to_index)?.id;
+
+        if from_id != to_id {
+            self.storage.swap_sub_tasks(parent_id, from_id, to_id);
+            self.move_selection_up();
+        }
+
+        Some(())
+    }
+
+    pub fn swap_down(&mut self) -> Option<()> {
+        let parent_id = self.opened_task;
+
+        let tasks = self.find_tasks_to_display();
+
+        let max_index = tasks.len().saturating_sub(1);
+
+        let from_index = self.get_position_selected_task()?;
+        let to_index = from_index.saturating_add(1).min(max_index);
+
+        let from_id = tasks.get(from_index)?.id;
+        let to_id = tasks.get(to_index)?.id;
+
+        if from_id != to_id {
+            self.storage.swap_sub_tasks(parent_id, from_id, to_id);
+            self.move_selection_down();
+        }
+        Some(())
+    }
+
+    pub fn open_selected_task(&mut self) {
         if let Some(new_parent_task_id) = self.get_selected_task() {
             self.opened_task = Some(new_parent_task_id.id);
-            self.scroll_to_top();
         }
     }
 
@@ -115,11 +156,11 @@ impl App<'_> {
 
     pub fn get_back_to_parent(&mut self) -> Option<()> {
         let current_parent_task_id = self.opened_task?;
+
         let current_parent_task = self.storage.get_task(current_parent_task_id)?;
         let next_parent_task_id = current_parent_task.parent_id;
 
         self.opened_task = next_parent_task_id;
-        self.scroll_to_top();
         Some(())
     }
 
@@ -178,21 +219,8 @@ impl App<'_> {
                 Some(parent_id) => self.storage.insert_sub_task(parent_id, task_data),
                 None => self.storage.insert_task(task_data),
             }
+
+            self.move_selection_to_bottom();
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_new_app() {
-        let storage = AppTreeStorage::default();
-        let app = App::new(storage);
-
-        assert_eq!(app.selection_index, 0);
-        assert!(matches!(app.state, AppState::Normal));
-        assert!(app.opened_task.is_none());
     }
 }

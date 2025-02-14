@@ -23,8 +23,6 @@ fn main() -> Result<()> {
 
     let app = App::new(storage);
 
-    // let app = load_state()?.map_or_else(App::new, State::into_app);
-
     // Setup
     let mut terminal = Terminal::new(CrosstermBackend::new(io::stdout()))?;
     terminal.clear()?;
@@ -56,8 +54,6 @@ fn run(mut app: App, terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> R
 }
 
 fn handle_input(app: &mut App) -> Result<ControlFlow<()>> {
-    // use KeyCode::*;
-
     use ratatui::crossterm::{
         event,
         event::{KeyCode::*, KeyEventKind},
@@ -67,15 +63,17 @@ fn handle_input(app: &mut App) -> Result<ControlFlow<()>> {
         match app.state {
             app::AppState::Normal if key.kind == KeyEventKind::Press => match key.code {
                 Char('q') => return Ok(ControlFlow::Break(())),
-                Char('g') => app.scroll_to_top(),
-                Char('G') => app.scroll_to_bottom(),
-                Char('d') => _ = app.delete_current_task(),
+                Char('g') => app.move_selection_to_top(),
+                Char('G') => app.move_selection_to_bottom(),
+                Char('d') => _ = app.delete_selected_task(),
                 Char('n') => _ = app.init_insert_mode_to_insert_new_task(),
                 Char('e') => _ = app.init_insert_mode_to_edit_task_title(),
-                Enter | Right => app.nest_task(),
-                Esc | Left | Backspace => _ = app.get_back_to_parent(),
-                Up => app.move_selection_up(),
-                Down => app.move_selection_down(),
+                Char('[') => _ = app.swap_up(),
+                Char(']') => _ = app.swap_down(),
+                Enter | Right | Char('l') => app.open_selected_task(),
+                Esc | Left | Backspace | Char('h') => _ = app.get_back_to_parent(),
+                Up | Char('k') => app.move_selection_up(),
+                Down | Char('j') => app.move_selection_down(),
                 Tab => app.update_done_state(),
                 _ => {}
             },

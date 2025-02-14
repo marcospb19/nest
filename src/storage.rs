@@ -1,7 +1,8 @@
-use std::{collections::HashMap, path::PathBuf, sync::LazyLock};
+use std::{path::PathBuf, sync::LazyLock};
 
 use color_eyre::Result;
 use fs_err as fs;
+use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 
 use crate::entities::{Task, TaskData};
@@ -14,7 +15,7 @@ static FILE_PATH: LazyLock<PathBuf> = std::sync::LazyLock::new(|| {
 
 #[derive(Default, Debug, Serialize, Deserialize)]
 pub struct AppTreeStorage {
-    pub tasks: HashMap<u64, Task>,
+    pub tasks: IndexMap<u64, Task>,
 }
 
 impl AppTreeStorage {
@@ -68,7 +69,6 @@ impl AppTreeStorage {
 
     pub fn remove_task(&mut self, task_id: u64) -> Option<Task> {
         let parent_id = self.tasks.get(&task_id).and_then(|task| task.parent_id);
-
         if let Some(parent_id) = parent_id {
             self.tasks
                 .entry(parent_id)
@@ -77,7 +77,7 @@ impl AppTreeStorage {
                 .retain(|id| *id != task_id);
         }
 
-        self.tasks.remove(&task_id)
+        self.tasks.shift_remove(&task_id)
     }
 
     pub fn update_task_title(&mut self, task_id: u64, new_title: String) {
@@ -86,6 +86,23 @@ impl AppTreeStorage {
 
     pub fn update_task_state(&mut self, task_id: u64, done: bool) {
         self.tasks.entry(task_id).and_modify(|task| task.done = done);
+    }
+
+    pub fn swap_sub_tasks(&mut self, parent_id: Option<u64>, from: u64, to: u64) -> Option<()> {
+        match parent_id {
+            Some(parent_id) => {
+                let parent_task = self.tasks.get_mut(&parent_id)?;
+                let from_index = parent_task.children.iter().position(|id| *id == from)?;
+                let to_index = parent_task.children.iter().position(|id| *id == to)?;
+                parent_task.children.swap(from_index, to_index);
+            }
+            None => {
+                let from_index = self.tasks.get_index_of(&from)?;
+                let to_index = self.tasks.get_index_of(&to)?;
+                self.tasks.swap_indices(from_index, to_index);
+            }
+        }
+        Some(())
     }
 
     fn create_task(&self, task_data: TaskData) -> Task {
