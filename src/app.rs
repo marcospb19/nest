@@ -18,11 +18,10 @@ pub struct App<'a> {
     pub storage: AppTreeStorage,
 
     pub opened_task: Option<u64>,
-    pub focus: HashMap<Option<u64>, usize>,
-
-    pub text_area: TextArea<'a>,
-
+    pub selections_in_tasks: HashMap<Option<u64>, usize>,
+    
     pub state: AppState,
+    pub text_area: TextArea<'a>,
 }
 
 impl App<'_> {
@@ -32,19 +31,19 @@ impl App<'_> {
 
         Self {
             storage,
-            focus: HashMap::new(),
+            selections_in_tasks: HashMap::new(),
             opened_task: None,
             state: AppState::Normal,
             text_area: TextArea::default(),
         }
     }
 
-    pub fn get_focused_task(&self) -> Option<usize> {
-        self.focus.get(&self.opened_task).cloned()
+    pub fn get_position_selected_task(&self) -> Option<usize> {
+        self.selections_in_tasks.get(&self.opened_task).cloned()
     }
 
     pub fn get_selected_task(&self) -> Option<&Task> {
-        let selected_index = self.get_focused_task()?;
+        let selected_index = self.get_position_selected_task()?;
         self.find_tasks_to_display().get(selected_index).copied()
     }
 
@@ -68,35 +67,40 @@ impl App<'_> {
         }
     }
 
-    pub fn delete_current_task(&mut self) -> Option<u64> {
+    pub fn delete_selected_task(&mut self) -> Option<u64> {
+        let current_focus = self.get_position_selected_task()?;
+
         let id_to_delete = self.get_selected_task()?.id;
+        let removed_task = self.storage.remove_task(id_to_delete)?;
 
-        self.storage.remove_task(id_to_delete).map(|task| task.id)
+        self.move_selection_to(current_focus.into());
+        Some(removed_task.id)
     }
 
-    pub fn move_display_to(&mut self, index: Option<usize>) {
+    pub fn move_selection_to(&mut self, index: Option<usize>) {
         let max_index = self.find_tasks_to_display().len().saturating_sub(1);
-        let index = index.filter(|n| *n <= max_index);
-        self.focus.insert(self.opened_task, index.unwrap_or(0));
+        let new_index = index.unwrap_or(0).max(0).min(max_index);
+        self.selections_in_tasks.insert(self.opened_task, new_index);
     }
 
-    pub fn scroll_to_top(&mut self) {
-        self.move_display_to(Some(0))
+    pub fn move_selection_to_top(&mut self) {
+        self.move_selection_to(Some(0))
     }
 
-    pub fn scroll_to_bottom(&mut self) {
-        self.move_display_to(self.find_tasks_to_display().len().checked_sub(1));
+    pub fn move_selection_to_bottom(&mut self) {
+        let last_index = self.find_tasks_to_display().len().checked_sub(1);
+        self.move_selection_to(last_index);
     }
 
     pub fn move_selection_up(&mut self) {
-        let selected_index = self.get_focused_task().unwrap_or(0).saturating_sub(1);
-        self.move_display_to(selected_index.into());
+        let selected_index = self.get_position_selected_task().unwrap_or(0).saturating_sub(1);
+        self.move_selection_to(selected_index.into());
     }
 
     pub fn move_selection_down(&mut self) {
         let max_index = self.find_tasks_to_display().len().saturating_sub(1);
-        let new_index = self.get_focused_task().unwrap_or(0).saturating_add(1);
-        self.move_display_to(new_index.min(max_index).into());
+        let new_index = self.get_position_selected_task().unwrap_or(0).saturating_add(1);
+        self.move_selection_to(new_index.min(max_index).into());
     }
 
     pub fn swap_up(&mut self) -> Option<()> {
@@ -104,7 +108,7 @@ impl App<'_> {
 
         let tasks = self.find_tasks_to_display();
 
-        let from_index = self.get_focused_task()?;
+        let from_index = self.get_position_selected_task()?;
         let to_index = from_index.saturating_sub(1);
 
         let from_id = tasks.get(from_index)?.id;
@@ -125,7 +129,7 @@ impl App<'_> {
 
         let max_index = tasks.len().saturating_sub(1);
 
-        let from_index = self.get_focused_task()?;
+        let from_index = self.get_position_selected_task()?;
         let to_index = from_index.saturating_add(1).min(max_index);
 
         let from_id = tasks.get(from_index)?.id;
@@ -138,7 +142,7 @@ impl App<'_> {
         Some(())
     }
 
-    pub fn nest_task(&mut self) {
+    pub fn open_selected_task(&mut self) {
         if let Some(new_parent_task_id) = self.get_selected_task() {
             self.opened_task = Some(new_parent_task_id.id);
         }
@@ -216,7 +220,7 @@ impl App<'_> {
                 None => self.storage.insert_task(task_data),
             }
 
-            self.scroll_to_bottom();
+            self.move_selection_to_bottom();
         }
     }
 }

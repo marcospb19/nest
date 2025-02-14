@@ -59,7 +59,7 @@ pub fn render_app(frame: &mut Frame, app: &mut App) {
 
     let elements_view_constraint = Constraint::Min(elements_list.len() as u16);
 
-    let mut selected = ListState::default().with_selected(app.get_focused_task());
+    let mut selected_task_state = ListState::default().with_selected(app.get_position_selected_task());
 
     if !app.find_parents_titles().is_empty() {
         let stack_view_constraint = Constraint::Length(2 + app.find_parents_titles().len() as u16);
@@ -70,14 +70,14 @@ pub fn render_app(frame: &mut Frame, app: &mut App) {
             .split(entire_area);
 
         frame.render_widget(stack_list, layout[0]);
-        frame.render_stateful_widget(elements_list, layout[1], &mut selected);
+        frame.render_stateful_widget(elements_list, layout[1], &mut selected_task_state);
     } else {
         let layout = Layout::default()
             .direction(Direction::Vertical)
             .constraints([elements_view_constraint])
             .split(entire_area);
 
-        frame.render_stateful_widget(elements_list, layout[0], &mut selected);
+        frame.render_stateful_widget(elements_list, layout[0], &mut selected_task_state);
     }
 
     if let AppState::EditTask { .. } | AppState::InsertTask { .. } = app.state {
