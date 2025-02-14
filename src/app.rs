@@ -196,6 +196,8 @@ impl App<'_> {
                 Some(parent_id) => self.storage.insert_sub_task(parent_id, task_data),
                 None => self.storage.insert_task(task_data),
             }
+
+            self.scroll_to_bottom();
         }
     }
 }
