@@ -1,5 +1,9 @@
 use ratatui::{
-    layout::{Constraint, Direction, Layout, Margin, Rect}, style::{Color, Modifier, Style, Stylize}, text::{Line, Span}, widgets::{Block, BorderType, Borders, List, ListItem, ListState}, Frame
+    Frame,
+    layout::{Constraint, Direction, Layout, Margin, Rect},
+    style::{Color, Modifier, Style, Stylize},
+    text::{Line, Span},
+    widgets::{Block, BorderType, Borders, List, ListItem, ListState},
 };
 
 use crate::app::{App, AppState};
@@ -56,7 +60,7 @@ pub fn render_app(frame: &mut Frame, app: &mut App) {
     let elements_view_constraint = Constraint::Min(elements_list.len() as u16);
 
     let mut selected = ListState::default().with_selected(app.get_focused_task());
-    
+
     if !app.find_parents_titles().is_empty() {
         let stack_view_constraint = Constraint::Length(2 + app.find_parents_titles().len() as u16);
 

@@ -107,8 +107,8 @@ impl App<'_> {
         let from_index = self.get_focused_task()?;
         let to_index = from_index.saturating_sub(1);
 
-        let from_id = tasks.iter().nth(from_index)?.id;
-        let to_id = tasks.iter().nth(to_index)?.id;
+        let from_id = tasks.get(from_index)?.id;
+        let to_id = tasks.get(to_index)?.id;
 
         if from_id != to_id {
             self.storage.swap_sub_tasks(parent_id, from_id, to_id);
@@ -128,8 +128,8 @@ impl App<'_> {
         let from_index = self.get_focused_task()?;
         let to_index = from_index.saturating_add(1).min(max_index);
 
-        let from_id = tasks.iter().nth(from_index)?.id;
-        let to_id = tasks.iter().nth(to_index)?.id;
+        let from_id = tasks.get(from_index)?.id;
+        let to_id = tasks.get(to_index)?.id;
 
         if from_id != to_id {
             self.storage.swap_sub_tasks(parent_id, from_id, to_id);
@@ -151,10 +151,6 @@ impl App<'_> {
     }
 
     pub fn get_back_to_parent(&mut self) -> Option<()> {
-        if self.opened_task.is_none() {
-            return None;
-        }
-
         let current_parent_task_id = self.opened_task?;
 
         let current_parent_task = self.storage.get_task(current_parent_task_id)?;

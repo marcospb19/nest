@@ -23,8 +23,6 @@ fn main() -> Result<()> {
 
     let app = App::new(storage);
 
-    // let app = load_state()?.map_or_else(App::new, State::into_app);
-
     // Setup
     let mut terminal = Terminal::new(CrosstermBackend::new(io::stdout()))?;
     terminal.clear()?;
@@ -56,8 +54,6 @@ fn run(mut app: App, terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> R
 }
 
 fn handle_input(app: &mut App) -> Result<ControlFlow<()>> {
-    // use KeyCode::*;
-
     use ratatui::crossterm::{
         event,
         event::{KeyCode::*, KeyEventKind},
