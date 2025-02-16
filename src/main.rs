@@ -12,7 +12,7 @@ use std::{
 use app::App;
 use color_eyre::Result;
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
-use ratatui::{Terminal, backend::CrosstermBackend};
+use ratatui::{Terminal, backend::CrosstermBackend, crossterm::event::KeyModifiers};
 
 use self::render::render_app;
 
@@ -68,10 +68,12 @@ fn handle_input(app: &mut App) -> Result<ControlFlow<()>> {
                 Char('d') => _ = app.delete_selected_task(),
                 Char('n') => _ = app.init_insert_mode_to_insert_new_task(),
                 Char('e') => _ = app.init_insert_mode_to_edit_task_title(),
-                Char('[') => _ = app.swap_up(),
-                Char(']') => _ = app.swap_down(),
                 Enter | Right | Char('l') => app.open_selected_task(),
                 Esc | Left | Backspace | Char('h') => _ = app.get_back_to_parent(),
+                Char('[') => _ = app.swap_up(),
+                Char(']') => _ = app.swap_down(),
+                Up if key.modifiers.contains(KeyModifiers::ALT) => _ = app.swap_up(),
+                Down if key.modifiers.contains(KeyModifiers::ALT) => _ = app.swap_down(),
                 Up | Char('k') => app.move_selection_up(),
                 Down | Char('j') => app.move_selection_down(),
                 Tab => app.update_done_state(),
