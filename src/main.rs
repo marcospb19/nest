@@ -1,4 +1,6 @@
 mod app;
+#[cfg(feature = "climsg")]
+mod climsg;
 mod entities;
 mod log;
 mod render;
@@ -9,7 +11,7 @@ use std::{
     ops::ControlFlow,
 };
 
-use app::App;
+use app::{App, AppState};
 use color_eyre::Result;
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
 use ratatui::{Terminal, backend::CrosstermBackend, crossterm::event::KeyModifiers};
@@ -47,6 +49,9 @@ fn run(mut app: App, terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> R
 
         app.storage.save()?;
 
+        #[cfg(feature = "climsg")]
+        climsg::send_message(app.get_selected_task().filter(|_| flow == ControlFlow::Continue(())));
+
         if flow == ControlFlow::Break(()) {
             break Ok(());
         }
@@ -61,7 +66,7 @@ fn handle_input(app: &mut App) -> Result<ControlFlow<()>> {
 
     if let event::Event::Key(key) = event::read()? {
         match app.state {
-            app::AppState::Normal if key.kind == KeyEventKind::Press => match key.code {
+            AppState::Normal if key.kind == KeyEventKind::Press => match key.code {
                 Char('q') => return Ok(ControlFlow::Break(())),
                 Char('g') => app.move_selection_to_top(),
                 Char('G') => app.move_selection_to_bottom(),
@@ -79,14 +84,14 @@ fn handle_input(app: &mut App) -> Result<ControlFlow<()>> {
                 Tab => app.update_done_state(),
                 _ => {}
             },
-            app::AppState::InsertTask { .. } => match key.code {
+            AppState::InsertTask { .. } => match key.code {
                 Esc => app.cancel_insert_mode(),
                 Enter => app.close_insert_mode_inserting_new_task(),
                 _ => {
                     app.text_area.input(key);
                 }
             },
-            app::AppState::EditTask { .. } => match key.code {
+            AppState::EditTask { .. } => match key.code {
                 Esc => app.cancel_insert_mode(),
                 Enter => app.close_insert_mode_updating_task_title(),
                 _ => {
