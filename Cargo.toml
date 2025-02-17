@@ -12,4 +12,7 @@ color-eyre = "0.6.2"
 fs-err = "3.0.0"
 unix-named-pipe = "0.2.0"
 tui-textarea = "0.7.0"
-indexmap = { version ="2.7.1", features = ["serde"] }
+indexmap = { version = "2.7.1", features = ["serde"] }
+
+[features]
+climsg = [] # integrate `nest` with `climsg`
