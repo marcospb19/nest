@@ -148,10 +148,11 @@ impl App<'_> {
         }
     }
 
-    pub fn update_done_state(&mut self) {
-        let selected_task = self.get_selected_task().unwrap();
+    pub fn update_done_state(&mut self) -> Option<()> {
+        let selected_task = self.get_selected_task()?;
         let new_done_state = !selected_task.done;
         self.storage.update_task_state(selected_task.id, new_done_state);
+        Some(())
     }
 
     pub fn get_back_to_parent(&mut self) -> Option<()> {
