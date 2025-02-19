@@ -91,7 +91,6 @@ fn handle_input(app: &mut App) -> Result<ControlFlow<()>> {
                 Esc => app.cancel_insert_mode(),
                 Enter => {
                     app.close_insert_mode_inserting_new_task();
-                    app.save_snapshot();
                 },
                 _ => {
                     app.text_area.input(key);
@@ -101,7 +100,6 @@ fn handle_input(app: &mut App) -> Result<ControlFlow<()>> {
                 Esc => app.cancel_insert_mode(),
                 Enter => {
                     app.close_insert_mode_updating_task_title();
-                    app.save_snapshot();
                 },
                 _ => {
                     app.text_area.input(key);

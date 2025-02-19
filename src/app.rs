@@ -70,6 +70,8 @@ impl App<'_> {
     }
 
     pub fn delete_selected_task(&mut self) -> Option<u64> {
+        self.save_snapshot();
+
         let current_position = self.get_position_selected_task()?;
 
         let id_to_delete = self.get_selected_task()?.id;
@@ -86,7 +88,7 @@ impl App<'_> {
     }
 
     pub fn move_selection_to_top(&mut self) {
-        self.move_selection_to(Some(0))
+        self.move_selection_to(Some(0));
     }
 
     pub fn move_selection_to_bottom(&mut self) {
@@ -117,6 +119,7 @@ impl App<'_> {
         let to_id = tasks.get(to_index)?.id;
 
         if from_id != to_id {
+            self.save_snapshot();
             self.storage.swap_sub_tasks(parent_id, from_id, to_id);
             self.move_selection_up();
         }
@@ -138,6 +141,7 @@ impl App<'_> {
         let to_id = tasks.get(to_index)?.id;
 
         if from_id != to_id {
+            self.save_snapshot();
             self.storage.swap_sub_tasks(parent_id, from_id, to_id);
             self.move_selection_down();
         }
@@ -151,6 +155,7 @@ impl App<'_> {
     }
 
     pub fn update_done_state(&mut self) {
+        self.save_snapshot();
         let selected_task = self.get_selected_task().unwrap();
         let new_done_state = !selected_task.done;
         self.storage.update_task_state(selected_task.id, new_done_state);
@@ -198,6 +203,7 @@ impl App<'_> {
                 return;
             }
 
+            self.save_snapshot();
             self.storage.update_task_title(task_id, content);
         }
     }
@@ -210,6 +216,8 @@ impl App<'_> {
             if content.is_empty() {
                 return;
             }
+
+            self.save_snapshot();
 
             let task_data = TaskData {
                 title: content,
