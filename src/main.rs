@@ -2,10 +2,10 @@ mod app;
 #[cfg(feature = "climsg")]
 mod climsg;
 mod entities;
+mod history;
 mod log;
 mod render;
 mod storage;
-mod history;
 
 use std::{
     io::{self},
@@ -91,7 +91,7 @@ fn handle_input(app: &mut App) -> Result<ControlFlow<()>> {
                 Esc => app.cancel_insert_mode(),
                 Enter => {
                     app.close_insert_mode_inserting_new_task();
-                },
+                }
                 _ => {
                     app.text_area.input(key);
                 }
@@ -100,7 +100,7 @@ fn handle_input(app: &mut App) -> Result<ControlFlow<()>> {
                 Esc => app.cancel_insert_mode(),
                 Enter => {
                     app.close_insert_mode_updating_task_title();
-                },
+                }
                 _ => {
                     app.text_area.input(key);
                 }
