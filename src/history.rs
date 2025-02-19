@@ -1,5 +1,6 @@
+
 use indexmap::IndexMap;
-use crate::{app::App, entities::Task};
+use crate::entities::Task;
 
 #[derive(Clone)]
 pub struct AppSnapshot {
@@ -10,37 +11,25 @@ pub struct AppSnapshot {
 
 #[derive(Default)]
 pub struct AppHistory {
-    pub history: Vec<AppSnapshot>,
-    pub cursor: Option<usize>,
+    pub undo_stack: Vec<AppSnapshot>,
+    pub redo_stack: Vec<AppSnapshot>,
 }
 
 impl AppHistory {
     pub fn save_snapshot(&mut self, snapshot: AppSnapshot) {
-        if let Some(cursor) = self.cursor {
-            self.history.truncate(cursor + 1);
-        }
-
-        self.history.push(snapshot);
-        self.cursor = Some(self.history.len() - 1);
+        self.undo_stack.push(snapshot);
+        self.redo_stack.clear();
     }
 
     pub fn undo(&mut self) -> Option<AppSnapshot> {
-        let new_cursor = self.cursor?.checked_sub(1)?;
-        let snapshot_to_apply = self.history.get(new_cursor)?.clone();
-
-        self.cursor = Some(new_cursor);
-        Some(snapshot_to_apply)
+        let snapshot = self.undo_stack.pop()?;
+        self.redo_stack.push(snapshot.clone());
+        Some(snapshot)
     }
 
     pub fn redo(&mut self) -> Option<AppSnapshot> {
-        if self.cursor? == self.history.len() - 1 {
-            return None;
-        }
-
-        let new_cursor = self.cursor? + 1;
-        let snapshot_to_apply = self.history.get(new_cursor)?.clone();
-
-        self.cursor = Some(new_cursor);
-        Some(snapshot_to_apply)
+        let snapshot = self.redo_stack.pop()?;
+        self.undo_stack.push(snapshot.clone());
+        Some(snapshot)
     }
 }
