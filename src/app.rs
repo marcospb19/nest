@@ -4,8 +4,7 @@ use ratatui::widgets::ListState;
 use tui_textarea::TextArea;
 
 use crate::{
-    entities::{Task, TaskData},
-    storage::AppTreeStorage,
+    entities::{Task, TaskData}, history::{AppHistory, AppSnapshot}, storage::AppTreeStorage
 };
 
 pub enum AppState {
@@ -19,6 +18,8 @@ pub struct App<'a> {
 
     pub opened_task: Option<u64>,
     pub selections_in_tasks: HashMap<Option<u64>, usize>,
+
+    pub history: AppHistory,
     
     pub state: AppState,
     pub text_area: TextArea<'a>,
@@ -33,6 +34,7 @@ impl App<'_> {
             storage,
             selections_in_tasks: HashMap::new(),
             opened_task: None,
+            history: AppHistory::default(),
             state: AppState::Normal,
             text_area: TextArea::default(),
         }
@@ -223,6 +225,24 @@ impl App<'_> {
             self.move_selection_to_bottom();
         }
     }
+
+    pub fn save_snapshot(&mut self) {
+        let snapshot = self.create_snapshot();
+        self.history.save_snapshot(snapshot);
+    }
+
+    pub fn undo(&mut self) -> Option<()> {
+        let snapshot = self.history.undo()?;
+        self.restore_snapshot(snapshot);
+        Some(())
+    }
+
+    pub fn redo(&mut self) -> Option<()> {
+        let snapshot = self.history.redo()?;
+        self.restore_snapshot(snapshot);
+        Some(())
+    }
+
     pub fn create_snapshot(&self) -> AppSnapshot {
         AppSnapshot { 
             tasks: self.storage.tasks.clone(),

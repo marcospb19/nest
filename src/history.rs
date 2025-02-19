@@ -15,28 +15,24 @@ pub struct AppHistory {
 }
 
 impl AppHistory {
-    pub fn save_snapshot(&mut self, app: &App) {
-        let snapshot = app.create_snapshot();
-        
+    pub fn save_snapshot(&mut self, snapshot: AppSnapshot) {
         if let Some(cursor) = self.cursor {
-            self.history.truncate(cursor);
+            self.history.truncate(cursor + 1);
         }
 
         self.history.push(snapshot);
         self.cursor = Some(self.history.len() - 1);
     }
 
-    pub fn undo(&mut self, app: &mut App) -> Option<()> {
+    pub fn undo(&mut self) -> Option<AppSnapshot> {
         let new_cursor = self.cursor?.checked_sub(1)?;
         let snapshot_to_apply = self.history.get(new_cursor)?.clone();
 
         self.cursor = Some(new_cursor);
-        app.restore_snapshot(snapshot_to_apply);
-
-        Some(())
+        Some(snapshot_to_apply)
     }
 
-    pub fn redo(&mut self, app: &mut App) -> Option<()> {
+    pub fn redo(&mut self) -> Option<AppSnapshot> {
         if self.cursor? == self.history.len() - 1 {
             return None;
         }
@@ -45,8 +41,6 @@ impl AppHistory {
         let snapshot_to_apply = self.history.get(new_cursor)?.clone();
 
         self.cursor = Some(new_cursor);
-        app.restore_snapshot(snapshot_to_apply);
-
-        Some(())
+        Some(snapshot_to_apply)
     }
 }
