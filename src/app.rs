@@ -223,4 +223,18 @@ impl App<'_> {
             self.move_selection_to_bottom();
         }
     }
+    pub fn create_snapshot(&self) -> AppSnapshot {
+        AppSnapshot { 
+            tasks: self.storage.tasks.clone(),
+            opened_task: self.opened_task.clone(), 
+            selected_index: self.get_position_selected_task().clone(),
+        }
+    }
+    
+    
+    pub fn restore_snapshot(&mut self, snapshot: AppSnapshot) {
+        self.storage.tasks = snapshot.tasks;
+        self.opened_task = snapshot.opened_task;
+        self.move_selection_to(snapshot.selected_index);
+    }
 }
