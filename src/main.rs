@@ -5,6 +5,7 @@ mod entities;
 mod log;
 mod render;
 mod storage;
+mod history;
 
 use std::{
     io::{self},
@@ -23,6 +24,8 @@ fn main() -> Result<()> {
 
     let storage = storage::AppTreeStorage::load_state()?;
 
+    let history = history::AppHistory::default();
+    
     let app = App::new(storage);
 
     // Setup
