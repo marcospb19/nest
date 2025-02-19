@@ -21,15 +21,15 @@ impl AppHistory {
         self.redo_stack.clear();
     }
 
-    pub fn undo(&mut self) -> Option<AppSnapshot> {
-        let snapshot = self.undo_stack.pop()?;
-        self.redo_stack.push(snapshot.clone());
-        Some(snapshot)
+    pub fn undo(&mut self, current_snapshot: AppSnapshot) -> Option<AppSnapshot> {
+        let snapshot_to_restore = self.undo_stack.pop()?;
+        self.redo_stack.push(current_snapshot);
+        Some(snapshot_to_restore)
     }
 
-    pub fn redo(&mut self) -> Option<AppSnapshot> {
-        let snapshot = self.redo_stack.pop()?;
-        self.undo_stack.push(snapshot.clone());
-        Some(snapshot)
+    pub fn redo(&mut self, current_snapshot: AppSnapshot) -> Option<AppSnapshot> {
+        let snapshot_to_restore = self.redo_stack.pop()?;
+        self.undo_stack.push(current_snapshot);
+        Some(snapshot_to_restore)
     }
 }

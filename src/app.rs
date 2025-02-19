@@ -240,14 +240,16 @@ impl App<'_> {
     }
 
     pub fn undo(&mut self) -> Option<()> {
-        let snapshot = self.history.undo()?;
-        self.restore_snapshot(snapshot);
+        let current_snapshot = self.create_snapshot();
+        let snapshot_to_restore = self.history.undo(current_snapshot)?;
+        self.restore_snapshot(snapshot_to_restore);
         Some(())
     }
 
     pub fn redo(&mut self) -> Option<()> {
-        let snapshot = self.history.redo()?;
-        self.restore_snapshot(snapshot);
+        let current_snapshot = self.create_snapshot();
+        let snapshot_to_restore = self.history.redo(current_snapshot)?;
+        self.restore_snapshot(snapshot_to_restore);
         Some(())
     }
 
