@@ -5,6 +5,7 @@ use tui_textarea::TextArea;
 
 use crate::{
     entities::{Task, TaskData},
+    history::{AppHistory, AppSnapshot},
     storage::AppTreeStorage,
 };
 
@@ -19,7 +20,9 @@ pub struct App<'a> {
 
     pub opened_task: Option<u64>,
     pub selections_in_tasks: HashMap<Option<u64>, usize>,
-    
+
+    pub history: AppHistory,
+
     pub state: AppState,
     pub text_area: TextArea<'a>,
 }
@@ -33,6 +36,7 @@ impl App<'_> {
             storage,
             selections_in_tasks: HashMap::new(),
             opened_task: None,
+            history: AppHistory::default(),
             state: AppState::Normal,
             text_area: TextArea::default(),
         }
@@ -68,6 +72,8 @@ impl App<'_> {
     }
 
     pub fn delete_selected_task(&mut self) -> Option<u64> {
+        self.save_snapshot();
+
         let current_position = self.get_position_selected_task()?;
 
         let id_to_delete = self.get_selected_task()?.id;
@@ -84,7 +90,7 @@ impl App<'_> {
     }
 
     pub fn move_selection_to_top(&mut self) {
-        self.move_selection_to(Some(0))
+        self.move_selection_to(Some(0));
     }
 
     pub fn move_selection_to_bottom(&mut self) {
@@ -115,6 +121,7 @@ impl App<'_> {
         let to_id = tasks.get(to_index)?.id;
 
         if from_id != to_id {
+            self.save_snapshot();
             self.storage.swap_sub_tasks(parent_id, from_id, to_id);
             self.move_selection_up();
         }
@@ -136,6 +143,7 @@ impl App<'_> {
         let to_id = tasks.get(to_index)?.id;
 
         if from_id != to_id {
+            self.save_snapshot();
             self.storage.swap_sub_tasks(parent_id, from_id, to_id);
             self.move_selection_down();
         }
@@ -149,6 +157,7 @@ impl App<'_> {
     }
 
     pub fn update_done_state(&mut self) -> Option<()> {
+        self.save_snapshot();
         let selected_task = self.get_selected_task()?;
         let new_done_state = !selected_task.done;
         self.storage.update_task_state(selected_task.id, new_done_state);
@@ -197,6 +206,7 @@ impl App<'_> {
                 return;
             }
 
+            self.save_snapshot();
             self.storage.update_task_title(task_id, content);
         }
     }
@@ -209,6 +219,8 @@ impl App<'_> {
             if content.is_empty() {
                 return;
             }
+
+            self.save_snapshot();
 
             let task_data = TaskData {
                 title: content,
@@ -223,5 +235,38 @@ impl App<'_> {
 
             self.move_selection_to_bottom();
         }
+    }
+
+    pub fn save_snapshot(&mut self) {
+        let snapshot = self.create_snapshot();
+        self.history.save_snapshot(snapshot);
+    }
+
+    pub fn undo(&mut self) -> Option<()> {
+        let current_snapshot = self.create_snapshot();
+        let snapshot_to_restore = self.history.undo(current_snapshot)?;
+        self.restore_snapshot(snapshot_to_restore);
+        Some(())
+    }
+
+    pub fn redo(&mut self) -> Option<()> {
+        let current_snapshot = self.create_snapshot();
+        let snapshot_to_restore = self.history.redo(current_snapshot)?;
+        self.restore_snapshot(snapshot_to_restore);
+        Some(())
+    }
+
+    pub fn create_snapshot(&self) -> AppSnapshot {
+        AppSnapshot {
+            tasks: self.storage.tasks.clone(),
+            opened_task: self.opened_task,
+            selected_index: self.get_position_selected_task(),
+        }
+    }
+
+    pub fn restore_snapshot(&mut self, snapshot: AppSnapshot) {
+        self.storage.tasks = snapshot.tasks;
+        self.opened_task = snapshot.opened_task;
+        self.move_selection_to(snapshot.selected_index);
     }
 }

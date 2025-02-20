@@ -2,6 +2,7 @@ mod app;
 #[cfg(feature = "climsg")]
 mod climsg;
 mod entities;
+mod history;
 mod log;
 mod render;
 mod storage;
@@ -69,6 +70,8 @@ fn handle_input(app: &mut App) -> Result<ControlFlow<()>> {
             AppState::Normal if key.kind == KeyEventKind::Press => match key.code {
                 Char('q') => return Ok(ControlFlow::Break(())),
                 Char('g') => app.move_selection_to_top(),
+                Char('u') => _ = app.undo(),
+                Char('r') => _ = app.redo(),
                 Char('G') => app.move_selection_to_bottom(),
                 Char('d') => _ = app.delete_selected_task(),
                 Char('n') => _ = app.init_insert_mode_to_insert_new_task(),
@@ -86,14 +89,18 @@ fn handle_input(app: &mut App) -> Result<ControlFlow<()>> {
             },
             AppState::InsertTask { .. } => match key.code {
                 Esc => app.cancel_insert_mode(),
-                Enter => app.close_insert_mode_inserting_new_task(),
+                Enter => {
+                    app.close_insert_mode_inserting_new_task();
+                }
                 _ => {
                     app.text_area.input(key);
                 }
             },
             AppState::EditTask { .. } => match key.code {
                 Esc => app.cancel_insert_mode(),
-                Enter => app.close_insert_mode_updating_task_title(),
+                Enter => {
+                    app.close_insert_mode_updating_task_title();
+                }
                 _ => {
                     app.text_area.input(key);
                 }
