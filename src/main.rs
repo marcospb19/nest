@@ -84,7 +84,7 @@ fn handle_input(app: &mut App) -> Result<ControlFlow<()>> {
                 Down if key.modifiers.contains(KeyModifiers::ALT) => _ = app.swap_down(),
                 Up | Char('k') => app.move_selection_up(),
                 Down | Char('j') => app.move_selection_down(),
-                Tab => app.update_done_state(),
+                Tab => _ = app.update_done_state(),
                 _ => {}
             },
             AppState::InsertTask { .. } => match key.code {
