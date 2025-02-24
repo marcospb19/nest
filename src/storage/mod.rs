@@ -1,4 +1,4 @@
-use std::{collections::HashMap, path::PathBuf, sync::LazyLock};
+use std::{path::PathBuf, sync::LazyLock};
 
 use color_eyre::Result;
 use fs_err as fs;
@@ -7,29 +7,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::entities::{ParentTask, Task, TaskData};
 
-#[derive(Default, Debug, Serialize, Deserialize)]
-pub struct ViewStorage {
-    pub opened_task: ParentTask,
-    pub selections_in_tasks: HashMap<ParentTask, usize>,
-}
-
-impl ViewStorage {
-    pub fn get_opened_task(&self) -> ParentTask {
-        self.opened_task
-    }
-
-    pub fn set_opened_task(&mut self, opened_task: ParentTask) {
-        self.opened_task = opened_task;
-    }
-
-    pub fn get_position_selected_task(&self) -> Option<usize> {
-        self.selections_in_tasks.get(&self.opened_task).cloned()
-    }
-
-    pub fn set_position_selected_task(&mut self, index: usize) {
-        self.selections_in_tasks.insert(self.opened_task, index);
-    }
-}
+mod view;
+use view::ViewStorage;
 
 static FILE_PATH: LazyLock<PathBuf> = std::sync::LazyLock::new(|| {
     let mut path = PathBuf::from(std::env::var("HOME").expect("There is no $HOME"));
@@ -38,12 +17,12 @@ static FILE_PATH: LazyLock<PathBuf> = std::sync::LazyLock::new(|| {
 });
 
 #[derive(Default, Debug, Serialize, Deserialize)]
-pub struct AppTreeStorage {
+pub struct AppStorage {
     pub view: ViewStorage,
     pub tasks: IndexMap<u64, Task>,
 }
 
-impl AppTreeStorage {
+impl AppStorage {
     pub fn insert_task(&mut self, parent: ParentTask, task_data: TaskData) {
         let mut task = self.create_task(task_data);
         task.parent = parent;
@@ -157,9 +136,9 @@ impl AppTreeStorage {
         Ok(())
     }
 
-    pub fn load_state() -> Result<AppTreeStorage> {
+    pub fn load_state() -> Result<AppStorage> {
         fs::read_to_string(&*FILE_PATH)
             .and_then(|json| serde_json::from_str(&json).map_err(|err| err.into()))
-            .or_else(|_| Ok(AppTreeStorage::default()))
+            .or_else(|_| Ok(AppStorage::default()))
     }
 }

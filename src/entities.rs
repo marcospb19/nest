@@ -10,7 +10,6 @@ pub struct TaskData {
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Task {
     pub id: u64,
-    // pub parent_id: Option<u64>,
     pub parent: ParentTask,
     pub title: String,
     pub children: Vec<u64>,

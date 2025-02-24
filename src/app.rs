@@ -1,12 +1,10 @@
-use std::collections::HashMap;
-
 use ratatui::widgets::ListState;
 use tui_textarea::TextArea;
 
 use crate::{
     entities::{ParentTask, Task, TaskData},
     history::{AppHistory, AppSnapshot},
-    storage::AppTreeStorage,
+    storage::AppStorage,
 };
 
 pub enum AppState {
@@ -16,10 +14,8 @@ pub enum AppState {
 }
 
 pub struct App<'a> {
-    pub storage: AppTreeStorage,
+    pub storage: AppStorage,
 
-    // pub opened_task: Option<u64>,
-    // pub selections_in_tasks: HashMap<Option<u64>, usize>,
     pub history: AppHistory,
 
     pub state: AppState,
@@ -27,14 +23,12 @@ pub struct App<'a> {
 }
 
 impl App<'_> {
-    pub fn new(storage: AppTreeStorage) -> Self {
+    pub fn new(storage: AppStorage) -> Self {
         let mut elements_list = ListState::default();
         elements_list.select(Some(0));
 
         Self {
             storage,
-            // selections_in_tasks: HashMap::new(),
-            // opened_task: None,
             history: AppHistory::default(),
             state: AppState::Normal,
             text_area: TextArea::default(),
@@ -43,7 +37,6 @@ impl App<'_> {
 
     pub fn get_position_selected_task(&self) -> Option<usize> {
         self.storage.view.get_position_selected_task()
-        // self.selections_in_tasks.get(&self.opened_task).cloned()
     }
 
     pub fn get_selected_task(&self) -> Option<&Task> {
@@ -222,11 +215,6 @@ impl App<'_> {
             };
 
             self.storage.insert_task(parent, task_data);
-
-            // match parent_id {
-            //     Some(parent_id) => self.storage.insert_sub_task(parent_id, task_data),
-            //     None => self.storage.insert_task(task_data),
-            // }
 
             self.move_selection_to_bottom();
         }
