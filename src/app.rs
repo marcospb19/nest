@@ -1,25 +1,20 @@
-use std::collections::HashMap;
-
 use ratatui::widgets::ListState;
 use tui_textarea::TextArea;
 
 use crate::{
-    entities::{Task, TaskData},
+    entities::{ParentTask, Task, TaskData},
     history::{AppHistory, AppSnapshot},
-    storage::AppTreeStorage,
+    storage::AppStorage,
 };
 
 pub enum AppState {
     Normal,
     EditTask { task_id: u64 },
-    InsertTask { parent_id: Option<u64> },
+    InsertTask { parent: ParentTask },
 }
 
 pub struct App<'a> {
-    pub storage: AppTreeStorage,
-
-    pub opened_task: Option<u64>,
-    pub selections_in_tasks: HashMap<Option<u64>, usize>,
+    pub storage: AppStorage,
 
     pub history: AppHistory,
 
@@ -28,53 +23,44 @@ pub struct App<'a> {
 }
 
 impl App<'_> {
-    pub fn new(storage: AppTreeStorage) -> Self {
+    pub fn new(storage: AppStorage) -> Self {
         let mut elements_list = ListState::default();
         elements_list.select(Some(0));
 
         Self {
             storage,
-            selections_in_tasks: HashMap::new(),
-            opened_task: None,
             history: AppHistory::default(),
             state: AppState::Normal,
             text_area: TextArea::default(),
         }
     }
 
-    pub fn get_position_selected_task(&self) -> Option<usize> {
-        self.selections_in_tasks.get(&self.opened_task).cloned()
+    pub fn get_selected_position(&self) -> Option<usize> {
+        self.storage.get_selected_position()
     }
 
     pub fn get_selected_task(&self) -> Option<&Task> {
-        let selected_index = self.get_position_selected_task()?;
-        self.find_tasks_to_display().get(selected_index).copied()
+        let selected_index = self.storage.get_selected_position()?;
+        self.storage.find_opened_sub_tasks().get(selected_index).copied()
     }
 
-    pub fn find_tasks_to_display(&self) -> Vec<&Task> {
-        if let Some(task_id) = self.opened_task {
-            self.storage.find_sub_tasks(task_id)
-        } else {
-            self.storage.find_root_tasks()
-        }
+    pub fn find_opened_sub_tasks(&self) -> Vec<&Task> {
+        self.storage.find_opened_sub_tasks()
     }
 
     pub fn find_parents_titles(&self) -> Vec<&str> {
-        match self.opened_task {
-            None => vec![],
-            Some(task_id) => self
-                .storage
-                .find_parents_stack(task_id)
-                .iter()
-                .map(|task| task.title.as_str())
-                .collect(),
-        }
+        self
+            .storage
+            .find_parents_stack()
+            .iter()
+            .map(|task| task.title.as_str())
+            .collect()
     }
 
     pub fn delete_selected_task(&mut self) -> Option<u64> {
         self.save_snapshot();
 
-        let current_position = self.get_position_selected_task()?;
+        let current_position = self.storage.get_selected_position()?;
 
         let id_to_delete = self.get_selected_task()?.id;
         let removed_task = self.storage.remove_task(id_to_delete)?;
@@ -84,9 +70,9 @@ impl App<'_> {
     }
 
     pub fn move_selection_to(&mut self, index: Option<usize>) {
-        let max_index = self.find_tasks_to_display().len().saturating_sub(1);
+        let max_index = self.find_opened_sub_tasks().len().saturating_sub(1);
         let new_index = index.unwrap_or(0).max(0).min(max_index);
-        self.selections_in_tasks.insert(self.opened_task, new_index);
+        self.storage.set_selected_position(new_index);
     }
 
     pub fn move_selection_to_top(&mut self) {
@@ -94,27 +80,25 @@ impl App<'_> {
     }
 
     pub fn move_selection_to_bottom(&mut self) {
-        let last_position = self.find_tasks_to_display().len().checked_sub(1);
+        let last_position = self.find_opened_sub_tasks().len().checked_sub(1);
         self.move_selection_to(last_position);
     }
 
     pub fn move_selection_up(&mut self) {
-        let selected_position = self.get_position_selected_task().unwrap_or(0).saturating_sub(1);
+        let selected_position = self.storage.get_selected_position().unwrap_or(0).saturating_sub(1);
         self.move_selection_to(selected_position.into());
     }
 
     pub fn move_selection_down(&mut self) {
-        let max_position = self.find_tasks_to_display().len().saturating_sub(1);
-        let new_position = self.get_position_selected_task().unwrap_or(0).saturating_add(1);
+        let max_position = self.find_opened_sub_tasks().len().saturating_sub(1);
+        let new_position = self.storage.get_selected_position().unwrap_or(0).saturating_add(1);
         self.move_selection_to(new_position.min(max_position).into());
     }
 
     pub fn swap_up(&mut self) -> Option<()> {
-        let parent_id = self.opened_task;
+        let tasks = self.find_opened_sub_tasks();
 
-        let tasks = self.find_tasks_to_display();
-
-        let from_index = self.get_position_selected_task()?;
+        let from_index = self.storage.get_selected_position()?;
         let to_index = from_index.saturating_sub(1);
 
         let from_id = tasks.get(from_index)?.id;
@@ -122,7 +106,7 @@ impl App<'_> {
 
         if from_id != to_id {
             self.save_snapshot();
-            self.storage.swap_sub_tasks(parent_id, from_id, to_id);
+            self.storage.swap_current_sub_tasks(from_id, to_id);
             self.move_selection_up();
         }
 
@@ -130,13 +114,11 @@ impl App<'_> {
     }
 
     pub fn swap_down(&mut self) -> Option<()> {
-        let parent_id = self.opened_task;
-
-        let tasks = self.find_tasks_to_display();
+        let tasks = self.find_opened_sub_tasks();
 
         let max_index = tasks.len().saturating_sub(1);
 
-        let from_index = self.get_position_selected_task()?;
+        let from_index = self.storage.get_selected_position()?;
         let to_index = from_index.saturating_add(1).min(max_index);
 
         let from_id = tasks.get(from_index)?.id;
@@ -144,15 +126,16 @@ impl App<'_> {
 
         if from_id != to_id {
             self.save_snapshot();
-            self.storage.swap_sub_tasks(parent_id, from_id, to_id);
+            self.storage.swap_current_sub_tasks(from_id, to_id);
             self.move_selection_down();
         }
         Some(())
     }
 
     pub fn open_selected_task(&mut self) {
-        if let Some(new_parent_task_id) = self.get_selected_task() {
-            self.opened_task = Some(new_parent_task_id.id);
+        if let Some(task) = self.get_selected_task() {
+            let new_parent = ParentTask::Id(task.id);
+            self.storage.view.set_opened_task(new_parent);
         }
     }
 
@@ -165,18 +148,20 @@ impl App<'_> {
     }
 
     pub fn get_back_to_parent(&mut self) -> Option<()> {
-        let current_parent_task_id = self.opened_task?;
+        let ParentTask::Id(opened_task_id) = self.storage.get_opened_task() else {
+            return None;
+        };
 
-        let current_parent_task = self.storage.get_task(current_parent_task_id)?;
-        let next_parent_task_id = current_parent_task.parent_id;
+        let current_opened_task = self.storage.get_task(opened_task_id)?;
+        let new_parent_task = current_opened_task.parent;
 
-        self.opened_task = next_parent_task_id;
+        self.storage.set_opened_task(new_parent_task);
         Some(())
     }
 
     pub fn init_insert_mode_to_insert_new_task(&mut self) -> Option<()> {
-        let parent_id = self.opened_task;
-        self.state = AppState::InsertTask { parent_id };
+        let parent = self.storage.get_opened_task();
+        self.state = AppState::InsertTask { parent };
         self.text_area = TextArea::default();
         Some(())
     }
@@ -212,7 +197,7 @@ impl App<'_> {
     }
 
     pub fn close_insert_mode_inserting_new_task(&mut self) {
-        if let AppState::InsertTask { parent_id } = self.state {
+        if let AppState::InsertTask { parent } = self.state {
             self.state = AppState::Normal;
             let content = self.text_area.lines().join("\n");
 
@@ -228,10 +213,7 @@ impl App<'_> {
                 done: false,
             };
 
-            match parent_id {
-                Some(parent_id) => self.storage.insert_sub_task(parent_id, task_data),
-                None => self.storage.insert_task(task_data),
-            }
+            self.storage.insert_task(parent, task_data);
 
             self.move_selection_to_bottom();
         }
@@ -259,14 +241,14 @@ impl App<'_> {
     pub fn create_snapshot(&self) -> AppSnapshot {
         AppSnapshot {
             tasks: self.storage.tasks.clone(),
-            opened_task: self.opened_task,
-            selected_index: self.get_position_selected_task(),
+            opened_task: self.storage.get_opened_task(),
+            selected_index: self.storage.get_selected_position(),
         }
     }
 
     pub fn restore_snapshot(&mut self, snapshot: AppSnapshot) {
         self.storage.tasks = snapshot.tasks;
-        self.opened_task = snapshot.opened_task;
+        self.storage.view.set_opened_task(snapshot.opened_task);
         self.move_selection_to(snapshot.selected_index);
     }
 }

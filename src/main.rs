@@ -22,7 +22,7 @@ use self::render::render_app;
 fn main() -> Result<()> {
     color_eyre::install()?;
 
-    let storage = storage::AppTreeStorage::load_state()?;
+    let storage = storage::AppStorage::load_state()?;
 
     let app = App::new(storage);
 
