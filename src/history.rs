@@ -1,11 +1,11 @@
 use indexmap::IndexMap;
 
-use crate::entities::Task;
+use crate::entities::{ParentTask, Task};
 
 #[derive(Clone)]
 pub struct AppSnapshot {
     pub tasks: IndexMap<u64, Task>,
-    pub opened_task: Option<u64>,
+    pub opened_task: ParentTask,
     pub selected_index: Option<usize>,
 }
 

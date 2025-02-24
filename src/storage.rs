@@ -7,7 +7,6 @@ use serde::{Deserialize, Serialize};
 
 use crate::entities::{ParentTask, Task, TaskData};
 
-
 #[derive(Default, Debug, Serialize, Deserialize)]
 pub struct ViewStorage {
     pub opened_task: ParentTask,
@@ -30,9 +29,7 @@ impl ViewStorage {
     pub fn set_position_selected_task(&mut self, index: usize) {
         self.selections_in_tasks.insert(self.opened_task, index);
     }
-
 }
-
 
 static FILE_PATH: LazyLock<PathBuf> = std::sync::LazyLock::new(|| {
     let mut path = PathBuf::from(std::env::var("HOME").expect("There is no $HOME"));
@@ -42,44 +39,55 @@ static FILE_PATH: LazyLock<PathBuf> = std::sync::LazyLock::new(|| {
 
 #[derive(Default, Debug, Serialize, Deserialize)]
 pub struct AppTreeStorage {
+    pub view: ViewStorage,
     pub tasks: IndexMap<u64, Task>,
 }
 
 impl AppTreeStorage {
-    pub fn insert_task(&mut self, task_data: TaskData) {
-        let task = self.create_task(task_data);
-        self.tasks.insert(task.id, task);
-    }
-
-    pub fn insert_sub_task(&mut self, parent_id: u64, task_data: TaskData) {
+    pub fn insert_task(&mut self, parent: ParentTask, task_data: TaskData) {
         let mut task = self.create_task(task_data);
-        task.parent_id = Some(parent_id);
+        task.parent = parent;
 
-        self.tasks.insert(task.id, task.clone());
-        self.tasks.entry(parent_id).or_default().children.push(task.id);
+        if let ParentTask::Id(parent_id) = parent {
+            self.tasks.entry(parent_id).or_default().children.push(task.id);
+        }
+
+        self.tasks.insert(task.id, task);
     }
 
     pub fn get_task(&self, task_id: u64) -> Option<&Task> {
         self.tasks.get(&task_id)
     }
 
-    pub fn find_parents_stack(&self, task_id: u64) -> Vec<&Task> {
+    pub fn find_parents_stack(&self) -> Vec<&Task> {
         let mut parents = Vec::new();
-        let mut current_id = task_id;
+
+        let mut current_id = match self.view.get_opened_task() {
+            ParentTask::Id(id) => id,
+            ParentTask::Root => return vec![],
+        };
+
         while let Some(task) = self.tasks.get(&current_id) {
             parents.push(task);
-            match task.parent_id {
-                None => break,
-                Some(parent_id) => current_id = parent_id,
+            match task.parent {
+                ParentTask::Id(parent_id) => current_id = parent_id,
+                ParentTask::Root => break,
             }
         }
         parents
     }
 
+    pub fn find_tasks_to_display(&self) -> Vec<&Task> {
+        match self.view.get_opened_task() {
+            ParentTask::Root => self.find_root_tasks(),
+            ParentTask::Id(parent_id) => self.find_sub_tasks(parent_id),
+        }
+    }
+
     pub fn find_root_tasks(&self) -> Vec<&Task> {
         self.tasks
             .values()
-            .filter(|task| task.parent_id.is_none())
+            .filter(|task| task.parent == ParentTask::Root)
             .collect::<Vec<_>>()
     }
 
@@ -95,8 +103,9 @@ impl AppTreeStorage {
     }
 
     pub fn remove_task(&mut self, task_id: u64) -> Option<Task> {
-        let parent_id = self.tasks.get(&task_id).and_then(|task| task.parent_id);
-        if let Some(parent_id) = parent_id {
+        let parent = self.tasks.get(&task_id)?.parent;
+
+        if let ParentTask::Id(parent_id) = parent {
             self.tasks
                 .entry(parent_id)
                 .or_default()
@@ -115,15 +124,16 @@ impl AppTreeStorage {
         self.tasks.entry(task_id).and_modify(|task| task.done = done);
     }
 
-    pub fn swap_sub_tasks(&mut self, parent_id: Option<u64>, from: u64, to: u64) -> Option<()> {
-        match parent_id {
-            Some(parent_id) => {
+    pub fn swap_sub_tasks(&mut self, from: u64, to: u64) -> Option<()> {
+        let parent = self.view.get_opened_task();
+        match parent {
+            ParentTask::Id(parent_id) => {
                 let parent_task = self.tasks.get_mut(&parent_id)?;
                 let from_index = parent_task.children.iter().position(|id| *id == from)?;
                 let to_index = parent_task.children.iter().position(|id| *id == to)?;
                 parent_task.children.swap(from_index, to_index);
             }
-            None => {
+            ParentTask::Root => {
                 let from_index = self.tasks.get_index_of(&from)?;
                 let to_index = self.tasks.get_index_of(&to)?;
                 self.tasks.swap_indices(from_index, to_index);
