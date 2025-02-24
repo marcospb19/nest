@@ -35,8 +35,15 @@ impl App<'_> {
         }
     }
 
-    pub fn get_selected_position(&self) -> Option<usize> {
-        self.storage.get_selected_position()
+    pub fn get_or_init_selected_position(&mut self) -> usize {
+        match self.storage.get_selected_position() {
+            Some(position) => position,
+            None => {
+                self.storage.set_selected_position(0);
+                0
+            },
+        }
+
     }
 
     pub fn get_selected_task(&self) -> Option<&Task> {
