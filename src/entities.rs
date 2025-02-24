@@ -37,3 +37,10 @@ impl From<Task> for TaskData {
         }
     }
 }
+
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum ParentTask {
+    #[default]
+    Root,
+    Id(u64),
+}
