@@ -23,6 +23,10 @@ pub struct AppStorage {
 }
 
 impl AppStorage {
+    pub fn get_task(&self, task_id: u64) -> Option<&Task> {
+        self.tasks.get(&task_id)
+    }
+
     pub fn insert_task(&mut self, parent: ParentTask, task_data: TaskData) {
         let mut task = self.create_task(task_data);
         task.parent = parent;
@@ -32,10 +36,6 @@ impl AppStorage {
         }
 
         self.tasks.insert(task.id, task);
-    }
-
-    pub fn get_task(&self, task_id: u64) -> Option<&Task> {
-        self.tasks.get(&task_id)
     }
 
     pub fn find_parents_stack(&self) -> Vec<&Task> {
@@ -56,7 +56,7 @@ impl AppStorage {
         parents
     }
 
-    pub fn find_tasks_to_display(&self) -> Vec<&Task> {
+    pub fn find_opened_sub_tasks(&self) -> Vec<&Task> {
         match self.view.get_opened_task() {
             ParentTask::Root => self.find_root_tasks(),
             ParentTask::Id(parent_id) => self.find_sub_tasks(parent_id),
@@ -92,6 +92,8 @@ impl AppStorage {
                 .retain(|id| *id != task_id);
         }
 
+        // TODO: Remove all its children
+
         self.tasks.shift_remove(&task_id)
     }
 
@@ -103,7 +105,7 @@ impl AppStorage {
         self.tasks.entry(task_id).and_modify(|task| task.done = done);
     }
 
-    pub fn swap_sub_tasks(&mut self, from: u64, to: u64) -> Option<()> {
+    pub fn swap_current_sub_tasks(&mut self, from: u64, to: u64) -> Option<()> {
         let parent = self.view.get_opened_task();
         match parent {
             ParentTask::Id(parent_id) => {
@@ -119,6 +121,22 @@ impl AppStorage {
             }
         }
         Some(())
+    }
+
+    pub fn get_opened_task(&self) -> ParentTask {
+        self.view.get_opened_task()
+    }
+
+    pub fn set_opened_task(&mut self, opened_task: ParentTask) {
+        self.view.set_opened_task(opened_task);
+    }
+
+    pub fn get_selected_position(&self) -> Option<usize> {
+        self.view.get_selected_position()
+    }
+
+    pub fn set_selected_position(&mut self, index: usize) {
+        self.view.set_selected_position(index);
     }
 
     fn create_task(&self, task_data: TaskData) -> Task {

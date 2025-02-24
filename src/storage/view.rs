@@ -8,7 +8,7 @@ use crate::entities::ParentTask;
 #[derive(Default, Debug, Serialize, Deserialize)]
 pub struct ViewStorage {
     pub opened_task: ParentTask,
-    pub selections_in_tasks: HashMap<ParentTask, usize>,
+    pub positions_in_opened_task: HashMap<ParentTask, usize>,
 }
 
 impl ViewStorage {
@@ -20,11 +20,11 @@ impl ViewStorage {
         self.opened_task = opened_task;
     }
 
-    pub fn get_position_selected_task(&self) -> Option<usize> {
-        self.selections_in_tasks.get(&self.opened_task).cloned()
+    pub fn get_selected_position(&self) -> Option<usize> {
+        self.positions_in_opened_task.get(&self.opened_task).cloned()
     }
 
-    pub fn set_position_selected_task(&mut self, index: usize) {
-        self.selections_in_tasks.insert(self.opened_task, index);
+    pub fn set_selected_position(&mut self, index: usize) {
+        self.positions_in_opened_task.insert(self.opened_task, index);
     }
 }
