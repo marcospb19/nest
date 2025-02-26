@@ -38,6 +38,31 @@ impl AppStorage {
         self.tasks.insert(task.id, task);
     }
 
+    pub fn insert_task_at(&mut self, parent: ParentTask, task_data: TaskData, index: usize) -> Option<()> {
+        let mut task = self.create_task(task_data);
+        task.parent = parent;
+
+        match parent {
+            ParentTask::Id(parent_id) => {
+                self.tasks.entry(parent_id).or_default().children.insert(index, task.id);
+
+                self.tasks.insert(task.id, task);
+            }
+            ParentTask::Root => {
+                let target_index_map_entry = self
+                    .tasks
+                    .iter()
+                    .filter(|(_, task)| task.parent == ParentTask::Root)
+                    .nth(index)
+                    .and_then(|(id, _)| self.tasks.get_index_of(id))?;
+
+                self.tasks.shift_insert(target_index_map_entry, task.id, task);
+            }
+        }
+
+        Some(())
+    }
+
     pub fn find_parents_stack(&self) -> Vec<&Task> {
         let mut parents = Vec::new();
 
