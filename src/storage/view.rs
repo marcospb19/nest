@@ -2,7 +2,6 @@ use serde::{Deserialize, Serialize};
 
 use crate::entities::ParentTask;
 
-
 #[derive(Default, Debug, Serialize, Deserialize)]
 pub struct ViewStorage {
     pub opened_task: ParentTask,

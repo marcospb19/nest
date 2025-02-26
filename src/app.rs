@@ -1,4 +1,4 @@
-use ratatui::{layout::Position, widgets::ListState};
+use ratatui::widgets::ListState;
 use tui_textarea::TextArea;
 
 use crate::{
@@ -9,8 +9,13 @@ use crate::{
 
 pub enum AppState {
     Normal,
-    EditTask { task_id: u64 },
-    InsertTask { parent: ParentTask, position: Option<usize> },
+    EditTask {
+        task_id: u64,
+    },
+    InsertTask {
+        parent: ParentTask,
+        position: Option<usize>,
+    },
 }
 
 pub struct App<'a> {
@@ -41,7 +46,7 @@ impl App<'_> {
             None => {
                 self.storage.set_selected_position(0);
                 0
-            },
+            }
         }
     }
 
@@ -55,8 +60,7 @@ impl App<'_> {
     }
 
     pub fn find_parents_titles(&self) -> Vec<&str> {
-        self
-            .storage
+        self.storage
             .find_parents_stack()
             .iter()
             .map(|task| task.title.as_str())
@@ -236,15 +240,16 @@ impl App<'_> {
 
             match position {
                 Some(position) => {
-                    self.storage.insert_task_at(parent, task_data, position).expect("Position out of bounds");
+                    self.storage
+                        .insert_task_at(parent, task_data, position)
+                        .expect("Position out of bounds");
                     self.move_selection_to(position.into());
-                },
+                }
                 None => {
                     self.storage.insert_task(parent, task_data);
                     self.move_selection_to_bottom();
-                },
+                }
             }
-
         }
     }
 

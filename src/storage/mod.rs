@@ -44,16 +44,13 @@ impl AppStorage {
 
         match parent {
             ParentTask::Id(parent_id) => {
-                self.tasks
-                    .entry(parent_id)
-                    .or_default()
-                    .children
-                    .insert(index, task.id);
-                
+                self.tasks.entry(parent_id).or_default().children.insert(index, task.id);
+
                 self.tasks.insert(task.id, task);
-            },
+            }
             ParentTask::Root => {
-                let target_index_map_entry = self.tasks
+                let target_index_map_entry = self
+                    .tasks
                     .iter()
                     .filter(|(_, task)| task.parent == ParentTask::Root)
                     .nth(index)
@@ -62,7 +59,7 @@ impl AppStorage {
                 self.tasks.shift_insert(target_index_map_entry, task.id, task);
             }
         }
-        
+
         Some(())
     }
 
