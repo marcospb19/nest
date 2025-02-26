@@ -1,4 +1,4 @@
-use ratatui::widgets::ListState;
+use ratatui::{layout::Position, widgets::ListState};
 use tui_textarea::TextArea;
 
 use crate::{
@@ -10,7 +10,7 @@ use crate::{
 pub enum AppState {
     Normal,
     EditTask { task_id: u64 },
-    InsertTask { parent: ParentTask },
+    InsertTask { parent: ParentTask, position: Option<usize> },
 }
 
 pub struct App<'a> {
@@ -43,7 +43,6 @@ impl App<'_> {
                 0
             },
         }
-
     }
 
     pub fn get_selected_task(&self) -> Option<&Task> {
@@ -166,9 +165,24 @@ impl App<'_> {
         Some(())
     }
 
-    pub fn init_insert_mode_to_insert_new_task(&mut self) -> Option<()> {
+    pub fn init_insert_mode_to_insert_new_task_above(&mut self) -> Option<()> {
+        let position = self.storage.get_selected_position();
+        self.init_insert_mode_to_insert_new_task(position)
+    }
+
+    pub fn init_insert_mode_to_insert_new_task_below(&mut self) -> Option<()> {
+        let position = self.storage.get_selected_position().map(|p| (p + 1));
+        self.init_insert_mode_to_insert_new_task(position)
+    }
+
+    pub fn init_insert_mode_to_insert_new_task_at_the_end(&mut self) -> Option<()> {
+        let position = self.storage.find_opened_sub_tasks().len();
+        self.init_insert_mode_to_insert_new_task(position.into())
+    }
+
+    pub fn init_insert_mode_to_insert_new_task(&mut self, position: Option<usize>) -> Option<()> {
         let parent = self.storage.get_opened_task();
-        self.state = AppState::InsertTask { parent };
+        self.state = AppState::InsertTask { parent, position };
         self.text_area = TextArea::default();
         Some(())
     }
@@ -204,7 +218,7 @@ impl App<'_> {
     }
 
     pub fn close_insert_mode_inserting_new_task(&mut self) {
-        if let AppState::InsertTask { parent } = self.state {
+        if let AppState::InsertTask { parent, position } = self.state {
             self.state = AppState::Normal;
             let content = self.text_area.lines().join("\n");
 
@@ -220,9 +234,17 @@ impl App<'_> {
                 done: false,
             };
 
-            self.storage.insert_task(parent, task_data);
+            match position {
+                Some(position) => {
+                    self.storage.insert_task_at(parent, task_data, position).expect("Position out of bounds");
+                    self.move_selection_to(position.into());
+                },
+                None => {
+                    self.storage.insert_task(parent, task_data);
+                    self.move_selection_to_bottom();
+                },
+            }
 
-            self.move_selection_to_bottom();
         }
     }
 
