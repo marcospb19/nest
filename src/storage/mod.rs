@@ -180,8 +180,7 @@ impl AppStorage {
     }
 
     pub fn load_state() -> Result<AppStorage> {
-        fs::read_to_string(&*FILE_PATH)
-            .and_then(|json| serde_json::from_str(&json).map_err(|err| err.into()))
-            .or_else(|_| Ok(AppStorage::default()))
+        let json_str = fs::read_to_string(&*FILE_PATH)?;
+        Ok(serde_json::from_str::<AppStorage>(&json_str)?)
     }
 }
