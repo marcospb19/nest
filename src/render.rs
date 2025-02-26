@@ -11,10 +11,16 @@ use crate::app::{App, AppState};
 pub fn render_app(frame: &mut Frame, app: &mut App) {
     let stack_list = {
         let stack = app
-            .find_parents_titles()
+            .find_parents_stack()
             .into_iter()
             .rev()
-            .map(String::from)
+            .map(|task| {
+                let mut span = Span::from(task.title.clone());
+                if task.done {
+                    span = span.add_modifier(Modifier::CROSSED_OUT).add_modifier(Modifier::DIM)
+                }
+                span
+            })
             .map(Line::from)
             .map(ListItem::new);
 

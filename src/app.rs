@@ -64,6 +64,10 @@ impl App<'_> {
             .collect()
     }
 
+    pub fn find_parents_stack(&self) -> Vec<&Task> {
+        self.storage.find_parents_stack()
+    }
+
     pub fn delete_selected_task(&mut self) -> Option<u64> {
         self.save_snapshot();
 
