@@ -47,16 +47,26 @@ impl AppStorage {
                 self.tasks.entry(parent_id).or_default().children.insert(index, task.id);
 
                 self.tasks.insert(task.id, task);
-            }
+            },
             ParentTask::Root => {
-                let target_index_map_entry = self
+                let root_tasks_ids = self
                     .tasks
                     .iter()
                     .filter(|(_, task)| task.parent == ParentTask::Root)
-                    .nth(index)
-                    .and_then(|(id, _)| self.tasks.get_index_of(id))?;
+                    .map(|(id, _)| id)
+                    .collect::<Vec<_>>();
 
-                self.tasks.shift_insert(target_index_map_entry, task.id, task);
+                if index == root_tasks_ids.len() {
+                    self.insert_task(parent, task.into());
+                    return Some(());
+                }
+                
+                let target_index_map_index = root_tasks_ids
+                    .iter()
+                    .nth(index)
+                    .and_then(|id| self.tasks.get_index_of(*id))?;
+
+                self.tasks.shift_insert(target_index_map_index, task.id, task);
             }
         }
 
