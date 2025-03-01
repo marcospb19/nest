@@ -24,8 +24,11 @@ impl ViewStorage {
             .map(|p| p.1)
     }
 
-    pub fn set_selected_position(&mut self, index: usize) {
+    pub fn set_selected_position(&mut self, index: Option<usize>) {
         self.positions_in_opened_task.retain(|p| p.0 != self.opened_task);
-        self.positions_in_opened_task.push((self.opened_task, index));
+
+        if let Some(new_index) = index {
+            self.positions_in_opened_task.push((self.opened_task, new_index));
+        }
     }
 }

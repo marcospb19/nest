@@ -160,7 +160,7 @@ impl AppStorage {
         self.view.get_selected_position()
     }
 
-    pub fn set_selected_position(&mut self, index: usize) {
+    pub fn set_selected_position(&mut self, index: Option<usize>) {
         self.view.set_selected_position(index);
     }
 
