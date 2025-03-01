@@ -79,18 +79,33 @@ impl App<'_> {
         let id_to_delete = self.get_selected_task()?.id;
         let removed_task = self.storage.remove_task(id_to_delete)?;
 
-        self.move_selection_to(current_position.into());
+        let count_subtasks = self.find_opened_sub_tasks().len();
+        if count_subtasks > 0 {
+            let new_position = current_position.min(count_subtasks - 1).into();
+            self.move_selection_to(new_position);
+        } else {
+            self.move_selection_to(None);
+        };
+
         Some(removed_task.id)
     }
 
     pub fn move_selection_to(&mut self, index: Option<usize>) {
-        let max_index = self.find_opened_sub_tasks().len().saturating_sub(1);
-        let new_index = index.unwrap_or(0).max(0).min(max_index);
+        let count_subtasks = self.find_opened_sub_tasks().len();
+
+        // If there is not any subtask, do not select anything
+        if count_subtasks == 0 {
+            self.storage.set_selected_position(None);
+            return;
+        }
+
+        let max_index = count_subtasks - 1;
+        let new_index = index.map(|i| i.max(0).min(max_index));
         self.storage.set_selected_position(new_index);
     }
 
     pub fn move_selection_to_top(&mut self) {
-        self.move_selection_to(Some(0));
+        self.move_selection_to(0.into());
     }
 
     pub fn move_selection_to_bottom(&mut self) {
@@ -105,7 +120,7 @@ impl App<'_> {
 
     pub fn move_selection_down(&mut self) {
         let max_position = self.find_opened_sub_tasks().len().saturating_sub(1);
-        let new_position = self.storage.get_selected_position().unwrap_or(0).saturating_add(1);
+        let new_position = self.storage.get_selected_position().unwrap_or(0) + 1;
         self.move_selection_to(new_position.min(max_position).into());
     }
 
