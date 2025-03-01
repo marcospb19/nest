@@ -1,4 +1,4 @@
-use std::{path::PathBuf, sync::LazyLock};
+use std::{path::{Path, PathBuf}, sync::LazyLock};
 
 use color_eyre::Result;
 use fs_err as fs;
@@ -180,6 +180,10 @@ impl AppStorage {
     }
 
     pub fn load_state() -> Result<AppStorage> {
+        if !Path::new(&*FILE_PATH).exists() {
+            return Ok(AppStorage::default());
+        }
+
         let json_str = fs::read_to_string(&*FILE_PATH)?;
         Ok(serde_json::from_str::<AppStorage>(&json_str)?)
     }
